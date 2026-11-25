@@ -11,7 +11,9 @@ namespace ZombieCity.City.Core
         public enum Mask : byte
         {
             Pedestrian = 0,
-            Zombie = 1
+            Zombie = 1,
+            Strict = 2,
+            StrictWithCrosswalk = 3
         }
 
         public struct ComponentInfo
@@ -154,11 +156,26 @@ namespace ZombieCity.City.Core
             for (int i = 0; i < n; i++)
             {
                 CityAccess a = (CityAccess)access[i];
-                bool ok = mask == Mask.Pedestrian
-                    ? a == CityAccess.Pedestrian
-                    : a == CityAccess.Pedestrian || a == CityAccess.Roadway;
-                if (ok && excludeCrosswalk && flags != null && i < flags.Length &&
-                    (flags[i] & (ushort)CellFlags.Crosswalk) != 0)
+                bool road = flags != null && i < flags.Length && (flags[i] & (ushort)CellFlags.Road) != 0;
+                bool cross = flags != null && i < flags.Length && (flags[i] & (ushort)CellFlags.Crosswalk) != 0;
+                bool ok;
+                switch (mask)
+                {
+                    case Mask.Zombie:
+                        ok = a == CityAccess.Pedestrian || a == CityAccess.Roadway;
+                        break;
+                    case Mask.Strict:
+                        ok = a == CityAccess.Pedestrian && !road;
+                        break;
+                    case Mask.StrictWithCrosswalk:
+                        ok = a == CityAccess.Pedestrian && (!road || cross);
+                        break;
+                    default:
+                        ok = a == CityAccess.Pedestrian;
+                        break;
+                }
+
+                if (ok && excludeCrosswalk && cross)
                 {
                     ok = false;
                 }
@@ -485,23 +502,465 @@ namespace ZombieCity.City.Core
 
         public static SizeHistogram Histogram(int[] cellCounts)
         {
-            return default;
+            var h = new SizeHistogram();
+            if (cellCounts == null)
+            {
+                return h;
+            }
+
+            for (int i = 0; i < cellCounts.Length; i++)
+            {
+                int c = cellCounts[i];
+                if (c <= 10)
+                {
+                    h.upTo10++;
+                }
+                else if (c <= 50)
+                {
+                    h.from11To50++;
+                }
+                else if (c <= 199)
+                {
+                    h.from51To199++;
+                }
+                else
+                {
+                    h.atLeast200++;
+                }
+            }
+
+            return h;
         }
 
         public static string FormatEnd(CrossingEnd end)
         {
-            return string.Empty;
+            return end.hasSidewalk
+                ? end.componentId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "нет тротуара рядом";
         }
 
+        /// <summary>
+        /// Strict pedestrian diagnostics (ADR-003 §4.1).
+        /// Crossing ends are the two vertices of each <see cref="WalkwayKind.Crossing"/> line.
+        /// </summary>
         public static StrictDiagnostics AnalyzeStrict(
             CityGrid grid,
             byte[] access,
             ushort[] flags,
             Walkway[] walkways,
             float searchRadiusM,
+            float crosswalkWidthFallback,
+            int islandMinCells = 200)
+        {
+            if (searchRadiusM < 0f)
+            {
+                searchRadiusM = 0f;
+            }
+
+            Report strict = Analyze(grid, access, flags, islandMinCells, Mask.Strict);
+            Report strictWith = Analyze(grid, access, flags, islandMinCells, Mask.StrictWithCrosswalk);
+            Report pedestrian = Analyze(grid, access, flags, islandMinCells, Mask.Pedestrian);
+
+            var diag = new StrictDiagnostics
+            {
+                componentsWithoutCrosswalk = strict.componentCount,
+                componentsWithCrosswalk = strictWith.componentCount,
+                strictWithout = strict.components ?? Array.Empty<ComponentInfo>(),
+                strictWith = strictWith.components ?? Array.Empty<ComponentInfo>(),
+                histogramStrict = Histogram(ComponentSizes(strict.components)),
+                histogramPedestrian = Histogram(ComponentSizes(pedestrian.components))
+            };
+
+            if (flags == null || flags.Length < grid.CellCount)
+            {
+                diag.crossings = Array.Empty<CrossingRow>();
+                diag.unmarkedLargest = Array.Empty<CellCluster>();
+                return diag;
+            }
+
+            CountCrosswalkGroups(grid, access, flags, strict.cellComponentId, diag);
+            CollectUnmarked(grid, access, flags, diag);
+            diag.crossings = ProbeCrossings(
+                grid, flags, strict.cellComponentId, walkways, searchRadiusM, crosswalkWidthFallback);
+            return diag;
+        }
+
+        static int[] ComponentSizes(ComponentInfo[] components)
+        {
+            if (components == null || components.Length == 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            var sizes = new int[components.Length];
+            for (int i = 0; i < components.Length; i++)
+            {
+                sizes[i] = components[i].cellCount;
+            }
+
+            return sizes;
+        }
+
+        static void CountCrosswalkGroups(
+            CityGrid grid, byte[] access, ushort[] flags, int[] strictLabels, StrictDiagnostics diag)
+        {
+            int w = grid.w;
+            int h = grid.h;
+            int n = grid.CellCount;
+            var visited = new bool[n];
+            int groups = 0;
+            int connecting = 0;
+            var queue = new int[n];
+            var ids = new List<int>();
+
+            for (int j = 0; j < h; j++)
+            {
+                for (int i = 0; i < w; i++)
+                {
+                    int seed = i + j * w;
+                    if (visited[seed] || (flags[seed] & (ushort)CellFlags.Crosswalk) == 0)
+                    {
+                        continue;
+                    }
+
+                    groups++;
+                    ids.Clear();
+                    int qh = 0, qt = 0;
+                    queue[qt++] = seed;
+                    visited[seed] = true;
+                    while (qh < qt)
+                    {
+                        int cur = queue[qh++];
+                        int ci = cur % w;
+                        int cj = cur / w;
+                        for (int d = 0; d < 8; d++)
+                        {
+                            int ni = ci + Di[d];
+                            int nj = cj + Dj[d];
+                            if (ni < 0 || nj < 0 || ni >= w || nj >= h)
+                            {
+                                continue;
+                            }
+
+                            int nidx = ni + nj * w;
+                            if (!CanStep(access, w, h, ci, cj, ni, nj))
+                            {
+                                continue;
+                            }
+
+                            if ((flags[nidx] & (ushort)CellFlags.Crosswalk) != 0)
+                            {
+                                if (!visited[nidx])
+                                {
+                                    visited[nidx] = true;
+                                    queue[qt++] = nidx;
+                                }
+                            }
+                            else if (strictLabels != null && nidx < strictLabels.Length && strictLabels[nidx] != 0)
+                            {
+                                InsertSortedUnique(ids, strictLabels[nidx]);
+                            }
+                        }
+                    }
+
+                    if (ids.Count >= 2)
+                    {
+                        connecting++;
+                    }
+                }
+            }
+
+            diag.crosswalkGroupCount = groups;
+            diag.connectingGroupCount = connecting;
+        }
+
+        static void InsertSortedUnique(List<int> ids, int id)
+        {
+            int lo = 0;
+            int hi = ids.Count;
+            while (lo < hi)
+            {
+                int mid = (lo + hi) >> 1;
+                if (ids[mid] < id)
+                {
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid;
+                }
+            }
+
+            if (lo < ids.Count && ids[lo] == id)
+            {
+                return;
+            }
+
+            ids.Insert(lo, id);
+        }
+
+        static void CollectUnmarked(CityGrid grid, byte[] access, ushort[] flags, StrictDiagnostics diag)
+        {
+            int w = grid.w;
+            int h = grid.h;
+            int n = grid.CellCount;
+            ushort sideBits = (ushort)(CellFlags.Sidewalk | CellFlags.SidewalkGenerated);
+            var visited = new bool[n];
+            var clusters = new List<CellCluster>();
+            var queue = new int[n];
+            int cells = 0;
+
+            for (int j = 0; j < h; j++)
+            {
+                for (int i = 0; i < w; i++)
+                {
+                    int seed = i + j * w;
+                    if (visited[seed] || !IsUnmarked(flags[seed], sideBits))
+                    {
+                        continue;
+                    }
+
+                    int qh = 0, qt = 0;
+                    queue[qt++] = seed;
+                    visited[seed] = true;
+                    int count = 0;
+                    long sumI = 0, sumJ = 0;
+                    while (qh < qt)
+                    {
+                        int cur = queue[qh++];
+                        int ci = cur % w;
+                        int cj = cur / w;
+                        count++;
+                        cells++;
+                        sumI += ci;
+                        sumJ += cj;
+                        for (int d = 0; d < 8; d++)
+                        {
+                            int ni = ci + Di[d];
+                            int nj = cj + Dj[d];
+                            if (ni < 0 || nj < 0 || ni >= w || nj >= h)
+                            {
+                                continue;
+                            }
+
+                            int nidx = ni + nj * w;
+                            if (visited[nidx] || !IsUnmarked(flags[nidx], sideBits))
+                            {
+                                continue;
+                            }
+
+                            if (!CanStep(access, w, h, ci, cj, ni, nj))
+                            {
+                                continue;
+                            }
+
+                            visited[nidx] = true;
+                            queue[qt++] = nidx;
+                        }
+                    }
+
+                    double cx = grid.origin.x + (sumI / (double)count + 0.5) * grid.cell;
+                    double cz = grid.origin.z + (sumJ / (double)count + 0.5) * grid.cell;
+                    clusters.Add(new CellCluster { cellCount = count, centerX = cx, centerZ = cz });
+                }
+            }
+
+            clusters.Sort(CompareClusters);
+            int clusterCount = clusters.Count;
+            if (clusters.Count > 10)
+            {
+                clusters.RemoveRange(10, clusters.Count - 10);
+            }
+
+            diag.unmarkedCellCount = cells;
+            diag.unmarkedClusterCount = clusterCount;
+            diag.unmarkedLargest = clusters.ToArray();
+        }
+
+        static int CompareClusters(CellCluster a, CellCluster b)
+        {
+            int c = b.cellCount.CompareTo(a.cellCount);
+            if (c != 0)
+            {
+                return c;
+            }
+
+            int x = a.centerX.CompareTo(b.centerX);
+            return x != 0 ? x : a.centerZ.CompareTo(b.centerZ);
+        }
+
+        static bool IsUnmarked(ushort flags, ushort sideBits)
+        {
+            bool road = (flags & (ushort)CellFlags.Road) != 0;
+            bool side = (flags & sideBits) != 0;
+            bool cross = (flags & (ushort)CellFlags.Crosswalk) != 0;
+            return road && side && !cross;
+        }
+
+        static CrossingRow[] ProbeCrossings(
+            CityGrid grid,
+            ushort[] flags,
+            int[] strictLabels,
+            Walkway[] walkways,
+            float searchRadiusM,
             float crosswalkWidthFallback)
         {
-            return new StrictDiagnostics();
+            if (walkways == null || walkways.Length == 0)
+            {
+                return Array.Empty<CrossingRow>();
+            }
+
+            var order = new List<int>();
+            for (int i = 0; i < walkways.Length; i++)
+            {
+                Walkway w = walkways[i];
+                if (w == null || w.kind != WalkwayKind.Crossing || w.isTunnel || w.points == null || w.points.Length < 2)
+                {
+                    continue;
+                }
+
+                order.Add(i);
+            }
+
+            order.Sort((a, b) =>
+            {
+                int c = walkways[a].osmId.CompareTo(walkways[b].osmId);
+                return c != 0 ? c : a.CompareTo(b);
+            });
+
+            var rows = new CrossingRow[order.Count];
+            var seen = new bool[grid.CellCount];
+            for (int r = 0; r < order.Count; r++)
+            {
+                Walkway w = walkways[order[r]];
+                Array.Clear(seen, 0, seen.Length);
+                int cells = 0;
+                float width = w.widthM > 0f ? w.widthM : crosswalkWidthFallback;
+                RasterPrimitives.ForEachPolylineCapsuleA(grid, w.points, width, (i, j) =>
+                {
+                    int idx = grid.Index(i, j);
+                    if (seen[idx])
+                    {
+                        return;
+                    }
+
+                    seen[idx] = true;
+                    if ((flags[idx] & (ushort)CellFlags.Crosswalk) != 0)
+                    {
+                        cells++;
+                    }
+                });
+
+                CrossingEnd e0 = ProbeEnd(grid, strictLabels, w.points[0], searchRadiusM);
+                CrossingEnd e1 = ProbeEnd(grid, strictLabels, w.points[w.points.Length - 1], searchRadiusM);
+                rows[r] = new CrossingRow
+                {
+                    osmId = w.osmId,
+                    cellCount = cells,
+                    end0 = e0,
+                    end1 = e1,
+                    status = StatusOf(e0, e1)
+                };
+            }
+
+            return rows;
+        }
+
+        static CrossingEndStatus StatusOf(CrossingEnd a, CrossingEnd b)
+        {
+            if (!a.hasSidewalk && !b.hasSidewalk)
+            {
+                return CrossingEndStatus.BothEndsWithoutSidewalk;
+            }
+
+            if (!a.hasSidewalk || !b.hasSidewalk)
+            {
+                return CrossingEndStatus.OneEndWithoutSidewalk;
+            }
+
+            return a.componentId == b.componentId
+                ? CrossingEndStatus.BothEndsSameComponent
+                : CrossingEndStatus.ConnectsDifferent;
+        }
+
+        static CrossingEnd ProbeEnd(CityGrid grid, int[] strictLabels, Vec2d point, float radius)
+        {
+            var end = new CrossingEnd();
+            if (strictLabels == null || radius < 0f)
+            {
+                return end;
+            }
+
+            grid.WorldToCell(new Vec2d(point.x - radius, point.z - radius), out int i0, out int j0);
+            grid.WorldToCell(new Vec2d(point.x + radius, point.z + radius), out int i1, out int j1);
+            if (i0 > i1)
+            {
+                int t = i0;
+                i0 = i1;
+                i1 = t;
+            }
+
+            if (j0 > j1)
+            {
+                int t = j0;
+                j0 = j1;
+                j1 = t;
+            }
+
+            i0 = Math.Max(0, i0);
+            j0 = Math.Max(0, j0);
+            i1 = Math.Min(grid.w - 1, i1);
+            j1 = Math.Min(grid.h - 1, j1);
+
+            double best = double.MaxValue;
+            int bestI = int.MaxValue;
+            int bestJ = int.MaxValue;
+            int bestId = 0;
+            bool found = false;
+            double limit = radius + 1e-9;
+            for (int j = j0; j <= j1; j++)
+            {
+                for (int i = i0; i <= i1; i++)
+                {
+                    int idx = i + j * grid.w;
+                    if (idx < 0 || idx >= strictLabels.Length || strictLabels[idx] == 0)
+                    {
+                        continue;
+                    }
+
+                    Vec2d c = grid.CellCenter(i, j);
+                    double dx = point.x - c.x;
+                    double dz = point.z - c.z;
+                    double dist = Math.Sqrt(dx * dx + dz * dz);
+                    if (dist > limit)
+                    {
+                        continue;
+                    }
+
+                    bool better = !found || dist < best - 1e-9 ||
+                                  (Math.Abs(dist - best) <= 1e-9 && (j < bestJ || (j == bestJ && i < bestI)));
+                    if (!better)
+                    {
+                        continue;
+                    }
+
+                    found = true;
+                    best = dist;
+                    bestI = i;
+                    bestJ = j;
+                    bestId = strictLabels[idx];
+                }
+            }
+
+            if (!found)
+            {
+                return end;
+            }
+
+            end.hasSidewalk = true;
+            end.componentId = bestId;
+            end.distanceM = best;
+            return end;
         }
     }
 }

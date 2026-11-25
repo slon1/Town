@@ -15,9 +15,9 @@ namespace ZombieCity.City.Core.Tests
 
         /// <summary>
         /// Golden settings hash for default <see cref="CityBakeConfig"/>.
-        /// Was 0x24472141C5F413C9 (pre-P2) → 0x09A4C90D0BFD89D7 (P2 railway/gate) → 0xC8F8DE8B56EBA46F (+islandMinCells P3).
+        /// Was 0x24472141C5F413C9 (pre-P2) → 0x09A4C90D0BFD89D7 (P2 railway/gate) → 0xC8F8DE8B56EBA46F (+islandMinCells P3) → 0xBAB661E880FB0E7C (+crosswalkEndSearchRadius TASK-004).
         /// </summary>
-        public const ulong DefaultSettingsHash = 0xC8F8DE8B56EBA46FUL;
+        public const ulong DefaultSettingsHash = 0xBAB661E880FB0E7CUL;
 
         [Test]
         public void CityBakeConfig_CanonicalBytes_StableAndNonEmpty()
