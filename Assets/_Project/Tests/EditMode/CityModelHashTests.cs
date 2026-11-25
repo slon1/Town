@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
@@ -158,6 +159,192 @@ namespace ZombieCity.City.Core.Tests
             Assert.Greater(doc.Stats.RelationCount, 0);
             Assert.IsTrue(doc.Stats.HasBounds);
             Assert.Greater(doc.Stats.ElapsedMs, 0);
+        }
+
+        [Test]
+        public void TagParser_WidthHeightFormats()
+        {
+            Assert.IsTrue(TagValueParser.TryParseMeters("6", out float a));
+            Assert.AreEqual(6f, a);
+            Assert.IsTrue(TagValueParser.TryParseMeters("6.5", out float b));
+            Assert.AreEqual(6.5f, b);
+            Assert.IsTrue(TagValueParser.TryParseMeters("6 m", out float c));
+            Assert.AreEqual(6f, c);
+            Assert.IsTrue(TagValueParser.TryParseMeters("6,5", out float d));
+            Assert.AreEqual(6.5f, d);
+        }
+
+        [Test]
+        public void RingOps_OuterCcw_HolesCw()
+        {
+            var outer = new List<Vec2d>
+            {
+                new Vec2d(0, 0), new Vec2d(0, 4), new Vec2d(4, 4), new Vec2d(4, 0), new Vec2d(0, 0)
+            };
+            Assert.IsTrue(RingOps.Normalize(outer, wantCcw: true));
+            Assert.IsTrue(RingOps.IsCcw(outer));
+
+            var hole = new List<Vec2d>
+            {
+                new Vec2d(1, 1), new Vec2d(2, 1), new Vec2d(2, 2), new Vec2d(1, 2), new Vec2d(1, 1)
+            };
+            Assert.IsTrue(RingOps.Normalize(hole, wantCcw: false));
+            Assert.IsFalse(RingOps.IsCcw(hole));
+        }
+
+        [Test]
+        public void Builder_MultipolygonWithHole_AndTwoOuterWays()
+        {
+            // Square outer from two ways (opposing directions), one hole
+            const string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<osm version=""0.6"">
+ <bounds minlat=""0"" minlon=""0"" maxlat=""1"" maxlon=""1""/>
+ <node id=""1"" lat=""0.1"" lon=""0.1""/>
+ <node id=""2"" lat=""0.1"" lon=""0.2""/>
+ <node id=""3"" lat=""0.2"" lon=""0.2""/>
+ <node id=""4"" lat=""0.2"" lon=""0.1""/>
+ <node id=""5"" lat=""0.12"" lon=""0.12""/>
+ <node id=""6"" lat=""0.12"" lon=""0.15""/>
+ <node id=""7"" lat=""0.15"" lon=""0.15""/>
+ <node id=""8"" lat=""0.15"" lon=""0.12""/>
+ <way id=""10""><nd ref=""1""/><nd ref=""2""/><nd ref=""3""/></way>
+ <way id=""11""><nd ref=""3""/><nd ref=""4""/><nd ref=""1""/></way>
+ <way id=""12""><nd ref=""5""/><nd ref=""8""/><nd ref=""7""/><nd ref=""6""/><nd ref=""5""/></way>
+ <relation id=""20"">
+  <member type=""way"" ref=""10"" role=""outer""/>
+  <member type=""way"" ref=""11"" role=""outer""/>
+  <member type=""way"" ref=""12"" role=""inner""/>
+  <tag k=""type"" v=""multipolygon""/>
+  <tag k=""building"" v=""yes""/>
+ </relation>
+</osm>";
+            OsmDocument doc = OsmXmlParser.ParseXml(xml);
+            CityModel model = CityModelBuilder.Build(doc, new CityBakeConfig(), "mp.osm");
+            Assert.AreEqual(1, model.areas.Length);
+            Assert.AreEqual(AreaKind.Building, model.areas[0].kind);
+            Assert.GreaterOrEqual(model.areas[0].ringStart.Length, 2);
+        }
+
+        [Test]
+        public void Builder_IncompleteMultipolygon_DoesNotThrow_IncrementsWarning()
+        {
+            const string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<osm version=""0.6"">
+ <bounds minlat=""0"" minlon=""0"" maxlat=""1"" maxlon=""1""/>
+ <node id=""1"" lat=""0.1"" lon=""0.1""/>
+ <node id=""2"" lat=""0.1"" lon=""0.2""/>
+ <way id=""10""><nd ref=""1""/><nd ref=""2""/></way>
+ <relation id=""20"">
+  <member type=""way"" ref=""10"" role=""outer""/>
+  <member type=""way"" ref=""999"" role=""outer""/>
+  <tag k=""type"" v=""multipolygon""/>
+  <tag k=""building"" v=""yes""/>
+ </relation>
+</osm>";
+            OsmDocument doc = OsmXmlParser.ParseXml(xml);
+            CityModel model = CityModelBuilder.Build(doc, new CityBakeConfig());
+            Assert.GreaterOrEqual(model.stats.warningIncompleteMultipolygons, 1);
+        }
+
+        [Test]
+        public void Builder_TunnelBuildingPassage_Vs_TunnelYes()
+        {
+            const string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<osm version=""0.6"">
+ <bounds minlat=""0"" minlon=""0"" maxlat=""1"" maxlon=""1""/>
+ <node id=""1"" lat=""0.1"" lon=""0.1""/>
+ <node id=""2"" lat=""0.1"" lon=""0.2""/>
+ <way id=""10"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""footway""/>
+  <tag k=""tunnel"" v=""building_passage""/>
+ </way>
+ <way id=""11"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""residential""/>
+  <tag k=""tunnel"" v=""yes""/>
+ </way>
+</osm>";
+            CityModel model = CityModelBuilder.Build(OsmXmlParser.ParseXml(xml), new CityBakeConfig());
+            Assert.AreEqual(1, model.walkways.Length);
+            Assert.IsTrue(model.walkways[0].isBuildingPassage);
+            Assert.IsFalse(model.walkways[0].isTunnel);
+            Assert.AreEqual(1, model.roads.Length);
+            Assert.IsTrue(model.roads[0].isTunnel);
+            Assert.IsFalse(model.roads[0].isBuildingPassage);
+        }
+
+        [Test]
+        public void Builder_BridgeLayer_LivingStreet_TrackMotor()
+        {
+            const string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<osm version=""0.6"">
+ <bounds minlat=""0"" minlon=""0"" maxlat=""1"" maxlon=""1""/>
+ <node id=""1"" lat=""0.1"" lon=""0.1""/>
+ <node id=""2"" lat=""0.1"" lon=""0.2""/>
+ <way id=""10"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""primary""/>
+  <tag k=""bridge"" v=""yes""/>
+  <tag k=""layer"" v=""1""/>
+ </way>
+ <way id=""11"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""living_street""/>
+ </way>
+ <way id=""12"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""track""/>
+  <tag k=""motor_vehicle"" v=""yes""/>
+ </way>
+ <way id=""13"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""track""/>
+ </way>
+</osm>";
+            CityModel model = CityModelBuilder.Build(OsmXmlParser.ParseXml(xml), new CityBakeConfig());
+            Road bridge = System.Array.Find(model.roads, r => r.osmId == 10);
+            Assert.IsTrue(bridge.isBridge);
+            Assert.AreEqual(1, bridge.layer);
+            Road living = System.Array.Find(model.roads, r => r.osmId == 11);
+            Assert.IsTrue(living.isShared);
+            Road trackMotor = System.Array.Find(model.roads, r => r.osmId == 12);
+            Assert.IsNotNull(trackMotor);
+            Assert.AreEqual(3f, trackMotor.widthM);
+            Assert.IsNull(System.Array.Find(model.roads, r => r.osmId == 13));
+            Assert.IsNotNull(System.Array.Find(model.walkways, w => w.osmId == 13));
+        }
+
+        [Test]
+        public void Builder_FootwayCrossing_Found()
+        {
+            const string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<osm version=""0.6"">
+ <bounds minlat=""0"" minlon=""0"" maxlat=""1"" maxlon=""1""/>
+ <node id=""1"" lat=""0.1"" lon=""0.1""/>
+ <node id=""2"" lat=""0.1"" lon=""0.2""/>
+ <way id=""10"">
+  <nd ref=""1""/><nd ref=""2""/>
+  <tag k=""highway"" v=""footway""/>
+  <tag k=""footway"" v=""crossing""/>
+ </way>
+</osm>";
+            CityModel model = CityModelBuilder.Build(OsmXmlParser.ParseXml(xml), new CityBakeConfig());
+            Assert.AreEqual(1, model.stats.crossingCount);
+            Assert.AreEqual(WalkwayKind.Crossing, model.walkways[0].kind);
+        }
+
+        [Test]
+        public void Builder_MapOsm_HasBuildingsWithHoles_Tunnels_Crossings()
+        {
+            string path = Path.GetFullPath(Path.Combine(Application.dataPath, "Source/map.osm"));
+            OsmDocument doc = OsmXmlParser.ParseFile(path);
+            CityModel model = CityModelBuilder.Build(doc, new CityBakeConfig(), path);
+            Assert.Greater(model.stats.buildingWithHolesCount, 0, "expected buildings with holes");
+            Assert.Greater(model.stats.tunnelCount, 0, "expected tunnels");
+            Assert.Greater(model.stats.crossingCount, 0, "expected footway crossings");
+            // map.osm contains no bridge=* tags (data); bridge classification covered by synthetic test
+            Assert.AreEqual(0, model.stats.bridgeCount);
         }
 
         public static CityModel CreateFixtureModel()

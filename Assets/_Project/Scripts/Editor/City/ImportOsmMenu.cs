@@ -46,15 +46,20 @@ namespace ZombieCity.City.EditorTools
             OsmDocument doc = OsmXmlParser.ParseFile(path);
             OsmParseStats s = doc.Stats;
             LocalEquirectangularProjection proj = doc.CreateProjection();
+            CityModel model = CityModelBuilder.Build(doc, new CityBakeConfig(), path);
+            CityModelStats ms = model.stats;
             Debug.Log(
-                $"[City] OSM parse OK\n" +
+                $"[City] OSM parse+classify OK\n" +
                 $"  file: {path}\n" +
                 $"  nodes={s.NodeCount} ways={s.WayCount} relations={s.RelationCount} multipolygons={s.MultipolygonCount}\n" +
                 $"  bounds=({s.MinLat:F7},{s.MinLon:F7})-({s.MaxLat:F7},{s.MaxLon:F7})" +
-                $" hasBounds={s.HasBounds} fromNodes={s.BoundsComputedFromNodes}\n" +
-                $"  lat0={proj.Lat0:F7} lon0={proj.Lon0:F7}\n" +
-                $"  warnings: invisible={s.SkippedInvisible} missingNodeRefs={s.MissingNodeRefs} missingWayMembers={s.MissingWayMemberRefs}\n" +
-                $"  elapsedMs={s.ElapsedMs:F1}");
+                $" sizeM=({model.meta.sizeXM:F1}×{model.meta.sizeZM:F1})\n" +
+                $"  roads={ms.roadCount} walkways={ms.walkwayCount} areas={ms.areaCount} " +
+                $"buildings={ms.buildingCount} holes={ms.buildingWithHolesCount}\n" +
+                $"  bridges={ms.bridgeCount} tunnels={ms.tunnelCount} crossings={ms.crossingCount}\n" +
+                $"  warnings: missingRefs={ms.warningMissingRefs} unclosedMP={ms.warningUnclosedMultipolygons} " +
+                $"incompleteMP={ms.warningIncompleteMultipolygons} defaultHeight={ms.warningBuildingDefaultHeight}\n" +
+                $"  hash=0x{model.meta.dataHash:X16} parseMs={s.ElapsedMs:F1}");
             return doc;
         }
     }

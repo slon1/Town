@@ -89,6 +89,8 @@ namespace ZombieCity.City.Core
         public int SkippedInvisible;
         public int MissingNodeRefs;
         public int MissingWayMemberRefs;
+        public int WarningUnclosedMultipolygons;
+        public int WarningIncompleteMultipolygons;
         public bool HasBounds;
         public bool BoundsComputedFromNodes;
         public double MinLat;
