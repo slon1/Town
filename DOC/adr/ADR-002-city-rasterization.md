@@ -1,6 +1,6 @@
 # ADR-002 — Растеризация CityModel в мастер-сетку
 
-Статус: **Принято** (v1). Уточняет и дополняет ADR-001 §5 (при расхождении формулировка этого ADR приоритетна). Охватывает фазу P2.
+Статус: **Принято** (v1.1: добавлено правило «дорога поверх воды без моста»). Уточняет и дополняет ADR-001 §5 (при расхождении формулировка этого ADR приоритетна). Охватывает фазу P2.
 
 ## 1. Область
 
@@ -34,9 +34,9 @@
 |-----|-----------------|----------|
 | 1 | `Area(Green)` | `Green` (A) |
 | 2 | `Area(Water)`; `Waterway` (не `isTunnel`) шириной `waterwayWidth` | `Water` (A) |
-| 3 | `Road` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`), шириной `widthM` | `Road` (A); при `isShared` + `Shared` |
-| 4 | `Walkway` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`) | `Footway`/`Sidewalk`/`Path`/`Pedestrian` → `Sidewalk`; `Cycleway` → `Cycleway`; `Steps` → `Steps`; **`Crossing` → `Crosswalk`** (поверх клеток `Road`, бит `Road` сохраняется; ширина `widthM`, иначе `crosswalkWidthFallback`); `Area(PedestrianArea)` → `Sidewalk` (A) |
-| 5 | `Railway` (не `isTunnel`, не `isBridge`) шириной `railwayWidth` | `Rail` (A) |
+| 3 | `Road` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`), шириной `widthM` | `Road` (A); при `isShared` + `Shared`; **снимает `Water`** (см. ниже) |
+| 4 | `Walkway` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`) | `Footway`/`Sidewalk`/`Path`/`Pedestrian` → `Sidewalk`; `Cycleway` → `Cycleway`; `Steps` → `Steps`; **`Crossing` → `Crosswalk`** (поверх клеток `Road`, бит `Road` сохраняется; ширина `widthM`, иначе `crosswalkWidthFallback`); `Area(PedestrianArea)` → `Sidewalk` (A); **снимает `Water`** (см. ниже) |
+| 5 | `Railway` (не `isTunnel`, не `isBridge`) шириной `railwayWidth` | `Rail` (A); **снимает `Water`** (см. ниже) |
 | 6 | `Area(Building)` | `Building` + `buildingId` (A); **снимает** `Road`, `Sidewalk`, `Cycleway`, `Steps`, `Crosswalk`, `Shared`, `Green`; клетки, уже имеющие `Bridge`, не трогает (мосты ещё не нанесены — см. шаг 9) |
 | 7 | `Road` / `Walkway` с `isBuildingPassage` | ставит `BuildingPassage` + свой класс (`Road` или `Sidewalk`); **снимает** `Building`, `buildingId = 0` в этих клетках |
 | 8 | `Barrier` линии шириной `barrierWidth` | `Barrier` (B); затем `PointFeature(Gate)` — диск радиуса `gateRadius`: **снять** `Barrier`, поставить `Gate` |
@@ -45,6 +45,8 @@
 | — | `PointFeature(CrossingNode/TrafficSignal/Entrance)` | в растр не попадает (учитываются счётчиками в статистике) |
 
 Сброс битов выполняется только в клетках текущей фигуры.
+
+**Дорога/путь/рельсы поверх воды без `bridge`.** В OSM небольшие водотоки под улицами часто не отмечены как туннель/труба, а дорога не отмечена как мост (пересечение «подразумевается»). Без правила клетки пересечения получили бы `Road` + `Water` и стали бы `Obstacle`, перерезав улицу. Поэтому шаги 3, 4 и 5 (`Road`, `Walkway`, `Railway` без `isBridge`/`isTunnel`) **снимают `Water` в своих клетках**: реальная дорога не лежит под водой, а пересечение трактуется как неотмеченный мост или труба. Число снятых клеток выводится в статистику (`waterClearedByLinear`); по нему видно, сколько таких пересечений в районе.
 
 ## 5. buildingId
 
