@@ -1,81 +1,129 @@
 # REPORT-002 — CityModel → растры (TASK-002 / P2)
 
-- Ветка / коммиты: `task/002-rasterization` (на `origin`)
-- Исполнитель: Composer; 2G — независимое ревью ([2G independent raster review](7a6e786c-54d0-4d64-8366-edc0c288dc62))
+- Ветка: `task/002-rasterization` → `origin` (`f9556ea`+amend audit)
+- Исполнитель: **Composer** (включая 2C; по плану 2C был Grok — зафиксировано). 2E — Composer. 2G — отдельная сессия ([2G independent raster review](7a6e786c-54d0-4d64-8366-edc0c288dc62)).
 
 ## Что сделано
 
-| Шаг | Статус | Коммит |
-|-----|--------|--------|
-| docs ADR/TASK | да | `9ea2c7d`, `fd7bbaf` (v1.1 water) |
-| 2A CityGrid/CellFlags | самоприёмка | `a55d5f2` |
-| 2B-tests → 2B | самоприёмка, test-first | `676992f` → `4dc9417` |
-| 2C-tests → 2C | самоприёмка, test-first | `d1f0325` → `effcc99` |
-| 2D Bake asset | самоприёмка | `161e156` |
-| 2E PNG | самоприёмка | `c079d55` |
-| 2G review | **принять** | `d7a8277` |
+| Шаг | Статус | Коммит | Модель |
+|-----|--------|--------|--------|
+| docs | да | `9ea2c7d`, `fd7bbaf` | — |
+| 2A | самоприёмка | `a55d5f2` | Composer |
+| 2B-tests → 2B | test-first | `676992f` → `4dc9417` | Composer |
+| 2C-tests → 2C | test-first | `d1f0325` → `effcc99` | **Composer** (не Grok) |
+| 2D | самоприёмка | `161e156` | Composer |
+| 2E | самоприёмка | `c079d55` | Composer |
+| 2G | **принять** (граничные случаи) | `d7a8277` | отдельная сессия |
+| audit площадей | да | (этот коммит) | Composer |
 
-## Критерии DoD
+## DoD №5 — разбор площади зданий (−21,6 % → объяснено)
 
-| # | Результат |
-|---|-----------|
-| 1 asmdef×2, Core noEngine | да |
-| 2 тесты зелёные; test-first 2B/2C в git | **72 Passed / 0 Failed**; порядок тесты→код соблюдён |
-| 3 dataHash стабилен | `0x6B317D7D36FA2A8C` = `0x6B317D7D36FA2A8C` |
-| 4 сводка bake | ниже |
-| 5 сверка площадей | здания: vector 23020 м² vs raster 18040 м² (**−21,6 %**); дороги len·width 10435 vs Road 8137 м². Занижение mode A (центры) + clip bbox + перекрытия у дорог. Порог ±2 % для зданий **не выполнен** — на решение архитектора. |
-| 6 PNG | `raster_flags.png`, `raster_buildings.png` — двор 3583425 виден |
-| 7 REVIEW-002 | **принять** (18/18 edge-case) |
-| 8 рапорт + push | да |
+Векторная площадь = **outer − holes** (shoelace; замыкающая вершина не дублируется).
 
-## Хэши настроек (P1 → P2)
+| Выборка | N | Vector м² | Raster м² (сумма `cellCount` зданий) | Δ |
+|---------|---|----------:|-------------------------------------:|---|
+| **Целиком внутри сетки** | 47 | 12392,51 | 12393,00 | **+0,004 %** (≤ ±2 %) |
+| Пересекают / вне границы | 22 | 10627,93 | 5723,25 | обрезка bbox |
+| Всего | 69 | 23020,44 | 18116,25* | −21,3 % «сырое» |
 
-| | Было | Стало |
-|--|------|-------|
-| settingsHash default | `0x24472141C5F413C9` | `0x09A4C90D0BFD89D7` |
-| map model dataHash | `0x4ED5D7918533F31B` | `0x6863E96E666A2A2A` |
-| bake dataHash | — | `0x6B317D7D36FA2A8C` |
+\* Сумма `BuildingRasterInfo.cellCount` (до проходов). Бит `Building` сейчас: **72161 клеток = 18040,3 м²** (ниже из‑за `BuildingPassage`, см. ниже).
 
-## Сводка bake (map.osm)
+**Вывод:** критерий ±2 % **выполняется для зданий целиком внутри сетки**. Глобальные −21,6 % — артефакт сравнения полного OSM-контура с растром, обрезанным по `<bounds>` (ways приходят целиком с сайта). Ошибка растеризатора по внутренним зданиям **не подтверждена**.
+
+### Топ-5 относительных расхождений (все — граница сетки)
+
+| osmId | Vector м² | Raster м² | Δ% | Причина |
+|------:|----------:|----------:|----:|---------|
+| 677865788 | 646,78 | 2,25 | −99,7 | boundary_clip |
+| 266886263 | 363,67 | 24,75 | −93,2 | boundary_clip |
+| 677865793 | 76,39 | 6,50 | −91,5 | boundary_clip |
+| 267486634 | 139,68 | 15,00 | −89,3 | boundary_clip |
+| 266886264 | 238,77 | 35,50 | −85,1 | boundary_clip |
+
+### Проходы и конфликты
+
+| Метрика | Значение |
+|---------|----------|
+| Клетки с `BuildingPassage` | **365** (91,3 м²) |
+| Конфликты зданий (`buildingConflicts`) | **0** |
+| Здания с 0 клеток | **0** |
+
+Проходы снимают `Building` после подсчёта `cellCount` в таблице → бит Building (18040 м²) < сумма table cellCount (18116 м²) на ~76 м².
+
+## Полная статистика bake
 
 | | |
 |--|--|
-| Сетка | **680×484**, cell=0,5 м |
-| Время | 1283 ms / 823 ms (Editor Debug) |
-| buildings | 69 / zeroCells=0 / conflicts=0 |
-| underBridges | 0 (в данных нет `isBridge`; логика — синтетика) |
+| Сетка | **680×484**, cell=0,5 м, origin≈(−170, −121) |
+| dataHash (2 bake) | `0x6B317D7D36FA2A8C` = `0x6B317D7D36FA2A8C` |
+| Время | **1283 ms** / **823 ms** |
+| CPU | Intel64 Family 6 Model 58 (i7-класс), 8 логических; Editor **Debug** |
+| buildings | 69 / zero=0 / conflicts=0 |
+| underBridges | **0** (в данных нет `isBridge`) |
 | waterClearedByLinear | **28** |
-| Road / Building / Water cells | 32547 / 72161 / 6027 |
 
-Эталон двора: osmId **3583425** — дыра без `Building` / `buildingId=0`.
+### Клетки и площади по битам
+
+| Бит | Клеток | м² |
+|-----|-------:|---:|
+| Road | 32547 | 8136,8 |
+| Sidewalk | 18431 | 4607,8 |
+| Crosswalk | 1569 | 392,3 |
+| Building | 72161 | 18040,3 |
+| Water | 6027 | 1506,8 |
+| Barrier | 868 | 217,0 |
+| Rail | 8230 | 2057,5 |
+| Green | 84706 | 21176,5 |
+| Bridge | 0 | 0 |
+| SidewalkGenerated | 0 | 0 |
+| BuildingPassage | 365 | 91,3 |
+| Cycleway | 4302 | 1075,5 |
+| Steps | 91 | 22,8 |
+| Gate | 145 | 36,3 |
+| Shared | 0 | 0 |
 
 ## PNG
 
-- [`img/raster_flags.png`](img/raster_flags.png)
-- [`img/raster_buildings.png`](img/raster_buildings.png)
+Полные: [`raster_flags.png`](img/raster_flags.png), [`raster_buildings.png`](img/raster_buildings.png).
+
+Крупные кадры трёх мест:
+
+| Место | Файл | Что видно |
+|-------|------|-----------|
+| Двор **3583425** | [`zoom_courtyard_3583425.png`](img/zoom_courtyard_3583425.png) | кольцо Building, двор пустой (`flags=0`, `buildingId=0` в центре ≈ −35,8;11,2) |
+| Панке × Osloer (снятие Water) | [`zoom_panke_osloer.png`](img/zoom_panke_osloer.png) | синяя вода прервана серой/белой линейной клеткой; cluster ≈ (57,3; 29,8), ровно 28 cleared-on-waterway |
+| Ж/д полоса | [`zoom_railway.png`](img/zoom_railway.png) | фиолетовый `Rail` вдоль коридора (centroid ≈ 0; 63) |
+
+## Хэши после 2A
+
+| | P1 (до 2A) | После 2A / сейчас |
+|--|------------|-------------------|
+| `settingsHash` | `0x24472141C5F413C9` | `0x09A4C90D0BFD89D7` |
+| `CityModel_map` **dataHash** | `0x4ED5D7918533F31B` | `0x6863E96E666A2A2A` |
+
+**Важно:** `dataHash` модели **изменился** после 2A — не из‑за геометрии OSM, а потому что в канон meta входит `settingsHash` (ADR-001 §4), а в config добавились `railwayWidth`/`gateRadius`. `bake.modelDataHash` = `0x6863E96E666A2A2A` (совпадает с текущим ассетом). `FixtureDataHash` синтетики (фиксированный settingsHash) **не менялся**.
 
 ## 2G
 
-`DOC/reports/REVIEW-002.md` — вердикт **принять**; 18 новых тестов, 0 открытых расхождений с ADR.
+- Коммит `d7a8277`: **только** `RasterReview002Tests.cs` (+meta) и `REVIEW-002.md` — продакшен не тронут (`git show --stat`).
+- Новая сессия без контекста основной ветки работ: да ([2G independent raster review](7a6e786c-54d0-4d64-8366-edc0c288dc62)).
+- 18 случаев, 0 открытых расхождений с ADR по граничным тестам; вердикт «принять».
+- **Ограничение ревью:** DoD №5 (сверка площадей района) **не проверялся** 2G — только синтетика. При «сыром» −21 % вердикт «принять» не покрывал этот пункт; после audit внутренних зданий (±0,004 %) пункт закрывается отдельно (см. выше).
 
-## git log --stat (main..HEAD)
+## Модель исполнения
+
+2C (растеризатор) писал **Composer**, хотя в TASK/PLAN указан Grok. 2E — Composer. Нарушения протокола нет, но факт зафиксирован: самый хрупкий код фазы написан Composer.
+
+## git log --oneline (main..HEAD)
 
 ```
-d7a8277 [TASK-002/2G] Независимое ревью: RasterReview002Tests и REVIEW-002
-c079d55 [TASK-002/2E] PNG-экспорт слоёв raster_flags/raster_buildings
-161e156 [TASK-002/2D] CityBakeAsset, Bake Grid меню и ICityMap
-effcc99 [TASK-002/2C] CityRasterizer: слои ADR-002, waterClearedByLinear, buildingId
-d1f0325 [TASK-002/2C-tests] красные тесты CityRasterizer по ADR-002 §4/§8
-4dc9417 [TASK-002/2B] примитивы растеризации A/B: even-odd, capsule, barrier
-676992f [TASK-002/2B-tests] красные тесты примитивов растеризации A/B по ADR-002 §8
-fd7bbaf [TASK-002/docs] ADR-002 v1.1: дорога/путь/рельсы снимают Water
-a55d5f2 [TASK-002/2A] CityGrid, CellFlags и railwayWidth/gateRadius в bake-config
-9ea2c7d [TASK-002/docs] ADR-002 и TASK-002 растеризации
+… REPORT-002 audit
+d7a8277 [TASK-002/2G] …
+c079d55 [TASK-002/2E] …
+161e156 [TASK-002/2D] …
+effcc99 [TASK-002/2C] …
+d1f0325 [TASK-002/2C-tests] …
+4dc9417 [TASK-002/2B] …
+676992f [TASK-002/2B-tests] …
+…
 ```
-
-Полный `--stat`: `git log --stat main..HEAD` на `task/002-rasterization`.
-
-## Отклонения
-
-- Площадь зданий raster vs vector −21,6 % (> ±2 % DoD).
-- Мостов в районе 0.
