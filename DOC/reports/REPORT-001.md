@@ -39,7 +39,7 @@
 | Bbox (из `<bounds>`) | **52.554548, 13.377662 … 52.556724, 13.382683** |
 | Размер района | **339,45 м × 241,96 м** |
 | dataHash (2 прогона) | `0x4ED5D7918533F31B` / `0x4ED5D7918533F31B` |
-| buildings / holes | 69 / 1 |
+| buildings / holes | 69 / 1 (**osmId двора: `3583425`**) |
 | roads / walkways | 32 / 93 |
 | waterways / railways | 3 / 4 |
 | bridges / tunnels / crossings | 0 / 1 / 11 |
@@ -84,6 +84,16 @@
 ## Gizmo
 
 Скриншот: [`DOC/reports/img/Dev_CityModel_gizmo.png`](img/Dev_CityModel_gizmo.png) — вид Top, север = +Z (синяя ось), здание с двором-дырой у центра gizmo, водоток (синий) и железнодорожный коридор.
+
+### Эталон двора с дырой (для P2)
+
+| | |
+|--|--|
+| osmId | **`3583425`** (relation multipolygon, 2 кольца) |
+| Центр (локальные м) | ≈ (−35,8 ; 11,2), aabb ≈ 38×44 м |
+| Крупный кадр | [`DOC/reports/img/courtyard_building_3583425.png`](img/courtyard_building_3583425.png) |
+
+На крупном кадре: внешний жёлтый контур и внутренний прямоугольный двор-дыра (even-odd). Эталон пустого двора на растре в P2.
 
 ## Матрица покрытия 1G (до / после)
 
