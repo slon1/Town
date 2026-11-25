@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6">
+ <bounds minlat="0" minlon="0" maxlat="1" maxlon="1"/>
+ <node id="1" lat="0.1" lon="0.1"/>
+ <node id="2" lat="0.1" lon="0.2"/>
+ <way id="10"><nd ref="1"/><nd ref="2"/></way>
+ <relation id="20">
+  <member type="way" ref="10" role="outer"/>
+  <member type="way" ref="999" role="outer"/>
+  <tag k="type" v="multipolygon"/>
+  <tag k="building" v="yes"/>
+ </relation>
+</osm>

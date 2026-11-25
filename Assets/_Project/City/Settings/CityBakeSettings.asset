@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: daaba29d3eacb8543a4fd2eafe97e922, type: 3}
+  m_Name: CityBakeSettings
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieCity.City.CityBakeSettings
+  config:
+    metersPerLane: 3
+    defaultBuildingHeight: 12
+    metersPerLevel: 3
+    roofLevelMeters: 1.5
+    useRoofLevels: 1
+    minBuildingHeight: 3
+    waterwayWidth: 4
+    cellSize: 0.5
+    sidewalkWidth: 2
+    sidewalkSearchRadius: 4
+    barrierWidth: 0.5
+    crosswalkWidthFallback: 3
+    useCropBBox: 0
+    cropMinLat: 0
+    cropMinLon: 0
+    cropMaxLat: 0
+    cropMaxLon: 0
+    roadWidths:
+    - key: primary
+      value: 10
+    - key: secondary
+      value: 9
+    - key: tertiary
+      value: 8
+    - key: residential
+      value: 6.5
+    - key: living_street
+      value: 5
+    - key: service
+      value: 4
+    - key: link
+      value: 5
+    - key: default
+      value: 6
+    walkwayWidths:
+    - key: footway
+      value: 2
+    - key: sidewalk
+      value: 2
+    - key: crossing
+      value: 3
+    - key: path
+      value: 1.5
+    - key: pedestrian
+      value: 4
+    - key: steps
+      value: 2
+    - key: cycleway
+      value: 2
+    - key: track
+      value: 3
+    highwayRoadTags:
+    - motorway
+    - trunk
+    - primary
+    - secondary
+    - tertiary
+    - unclassified
+    - residential
+    - living_street
+    - service
+    - motorway_link
+    - trunk_link
+    - primary_link
+    - secondary_link
+    - tertiary_link
+    highwayWalkwayTags:
+    - footway
+    - path
+    - pedestrian
+    - steps
+    - cycleway
+    - track
+    barrierTags:
+    - wall
+    - fence
+    - hedge
+    - retaining_wall
+    - guard_rail
+    - city_wall
+    railwayTags:
+    - rail
+    - light_rail
+    - subway
+    - tram
+    - narrow_gauge
+    landuseTags:
+    - grass
+    - forest
+    - meadow
+    - village_green
+    - recreation_ground
+    leisureTags:
+    - park
+    - garden
+    - playground
+    - pitch
+    naturalTags:
+    - wood
+    - scrub
+    - grassland
+    - water
