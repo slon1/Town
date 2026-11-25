@@ -15,6 +15,8 @@ namespace ZombieCity.City.Core.Tests
             Assert.AreEqual(3f, config.metersPerLevel);
             Assert.AreEqual(2f, config.sidewalkWidth);
             Assert.AreEqual(4f, config.waterwayWidth);
+            Assert.AreEqual(3f, config.railwayWidth);
+            Assert.AreEqual(1.5f, config.gateRadius);
         }
 
         [Test]

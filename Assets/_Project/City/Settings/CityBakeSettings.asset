@@ -25,6 +25,8 @@ MonoBehaviour:
     sidewalkSearchRadius: 4
     barrierWidth: 0.5
     crosswalkWidthFallback: 3
+    railwayWidth: 3
+    gateRadius: 1.5
     useCropBBox: 0
     cropMinLat: 0
     cropMinLon: 0
