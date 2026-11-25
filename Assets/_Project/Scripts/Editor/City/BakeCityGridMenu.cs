@@ -98,7 +98,7 @@ namespace ZombieCity.City.EditorTools
             }
 
             sb.AppendLine($"  buildings={r.stats.buildingCount} zeroCells={r.stats.buildingsWithZeroCells} conflicts={r.stats.buildingConflicts}");
-            sb.AppendLine($"  underBridges={r.stats.cellsUnderBridges} waterCleared={r.stats.waterClearedByLinear} outside={r.stats.objectsOutsideGrid}");
+            sb.AppendLine($"  underBridges={r.stats.cellsUnderBridges} waterCleared={r.stats.waterClearedByLinear} railCleared={r.stats.railClearedByLinear} tramSkipped={r.stats.tramSkipped} outside={r.stats.objectsOutsideGrid}");
             sb.AppendLine($"  Road|Crosswalk cells={r.stats.cellsRoadAndCrosswalk}");
             double cellArea = r.grid.cell * (double)r.grid.cell;
             string[] names =

@@ -179,6 +179,7 @@ namespace ZombieCity.City.Core
             {
                 Railway r = railways[i] ?? new Railway();
                 w.WriteInt64(r.osmId);
+                w.WriteEnum(r.kind);
                 w.WriteBool(r.isBridge);
                 w.WriteBool(r.isTunnel);
                 w.WriteInt32(r.layer);

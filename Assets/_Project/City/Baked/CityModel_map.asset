@@ -23,8 +23,8 @@ MonoBehaviour:
       lon0: 13.3801725
       sizeXM: 339.4476301236044
       sizeZM: 241.96049458880464
-      settingsHash: 694901300394822103
-      dataHash: 7522112463012768298
+      settingsHash: 14481569291849933935
+      dataHash: 14245788459101408852
     roads:
     - osmId: 4544065
       highwayClass: 2
@@ -5073,6 +5073,7 @@ MonoBehaviour:
         z: 46.63521664976628
     railways:
     - osmId: 4751005
+      kind: 3
       isBridge: 0
       isTunnel: 0
       layer: 0
@@ -5120,6 +5121,7 @@ MonoBehaviour:
       - x: -132.8111669742713
         z: 81.99525216403424
     - osmId: 143866699
+      kind: 3
       isBridge: 0
       isTunnel: 0
       layer: 0
@@ -5169,6 +5171,7 @@ MonoBehaviour:
       - x: 609.9443265760526
         z: -18.547339383215036
     - osmId: 1348391980
+      kind: 3
       isBridge: 0
       isTunnel: 0
       layer: 0
@@ -5198,6 +5201,7 @@ MonoBehaviour:
       - x: -333.3496065751499
         z: 108.14833503482438
     - osmId: 1348391992
+      kind: 3
       isBridge: 0
       isTunnel: 0
       layer: 0

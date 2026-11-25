@@ -36,21 +36,21 @@ namespace ZombieCity.City.Core
             var stats = new RasterStats();
 
             // --- Step 1: Green ---
-            ApplyAreas(model.areas, AreaKind.Green, grid, flags, (ushort)CellFlags.Green, null, buildingId, stats, clearWater: false);
+            ApplyAreas(model.areas, AreaKind.Green, grid, flags, (ushort)CellFlags.Green, null, buildingId, stats, clearWater: false, clearRail: false);
 
             // --- Step 2: Water areas + waterways ---
-            ApplyAreas(model.areas, AreaKind.Water, grid, flags, (ushort)CellFlags.Water, null, buildingId, stats, clearWater: false);
+            ApplyAreas(model.areas, AreaKind.Water, grid, flags, (ushort)CellFlags.Water, null, buildingId, stats, clearWater: false, clearRail: false);
             ApplyWaterways(model.waterways, config, grid, flags, stats);
 
-            // --- Step 3: Roads (surface) ---
+            // Railway between water and roads (ADR-002 v1.2). Tram is skipped here.
+            ApplyRailwaysSurface(model.railways, config, grid, flags, stats);
+
+            // --- Roads (surface): clear Water and Rail ---
             ApplyRoadsSurface(model.roads, grid, flags, stats);
 
-            // --- Step 4: Walkways + PedestrianArea ---
+            // --- Walkways + PedestrianArea: clear Water and Rail ---
             ApplyWalkwaysSurface(model.walkways, config, grid, flags, stats);
-            ApplyAreas(model.areas, AreaKind.PedestrianArea, grid, flags, (ushort)CellFlags.Sidewalk, null, buildingId, stats, clearWater: true);
-
-            // --- Step 5: Railway ---
-            ApplyRailwaysSurface(model.railways, config, grid, flags, stats);
+            ApplyAreas(model.areas, AreaKind.PedestrianArea, grid, flags, (ushort)CellFlags.Sidewalk, null, buildingId, stats, clearWater: true, clearRail: true);
 
             // --- Step 6: Buildings ---
             BuildingRasterInfo[] buildings = ApplyBuildings(model.areas, grid, flags, buildingId, stats);
@@ -93,7 +93,8 @@ namespace ZombieCity.City.Core
             ushort? clearMask,
             ushort[] buildingId,
             RasterStats stats,
-            bool clearWater)
+            bool clearWater,
+            bool clearRail)
         {
             if (areas == null)
             {
@@ -112,6 +113,11 @@ namespace ZombieCity.City.Core
                     if (clearWater)
                     {
                         ClearWaterIfSet(flags, idx, stats);
+                    }
+
+                    if (clearRail)
+                    {
+                        ClearRailIfSet(flags, idx, stats);
                     }
 
                     if (clearMask.HasValue)
@@ -182,7 +188,7 @@ namespace ZombieCity.City.Core
                     bits |= (ushort)CellFlags.Shared;
                 }
 
-                int stamped = StampLinearClearWaterA(grid, flags, r.points, r.widthM, bits, stats);
+                int stamped = StampLinearClearWaterA(grid, flags, r.points, r.widthM, bits, stats, clearRail: true);
                 if (stamped == 0)
                 {
                     stats.objectsOutsideGrid++;
@@ -215,7 +221,7 @@ namespace ZombieCity.City.Core
                     width = config.crosswalkWidthFallback;
                 }
 
-                int stamped = StampLinearClearWaterA(grid, flags, w.points, width, bit, stats);
+                int stamped = StampLinearClearWaterA(grid, flags, w.points, width, bit, stats, clearRail: true);
                 if (stamped == 0)
                 {
                     stats.objectsOutsideGrid++;
@@ -236,13 +242,24 @@ namespace ZombieCity.City.Core
             for (int i = 0; i < sorted.Length; i++)
             {
                 Railway r = sorted[i];
-                if (r == null || r.isTunnel || r.isBridge || r.points == null || r.points.Length < 2)
+                if (r == null)
+                {
+                    continue;
+                }
+
+                if (r.kind == RailwayKind.Tram)
+                {
+                    stats.tramSkipped++;
+                    continue;
+                }
+
+                if (r.isTunnel || r.isBridge || r.points == null || r.points.Length < 2)
                 {
                     continue;
                 }
 
                 int stamped = StampLinearClearWaterA(
-                    grid, flags, r.points, config.railwayWidth, (ushort)CellFlags.Rail, stats);
+                    grid, flags, r.points, config.railwayWidth, (ushort)CellFlags.Rail, stats, clearRail: false);
                 if (stamped == 0)
                 {
                     stats.objectsOutsideGrid++;
@@ -540,7 +557,8 @@ namespace ZombieCity.City.Core
                 for (int i = 0; i < railways.Length; i++)
                 {
                     Railway r = railways[i];
-                    if (r != null && r.isBridge && !r.isTunnel && r.points != null && r.points.Length >= 2)
+                    if (r != null && r.kind != RailwayKind.Tram && r.isBridge && !r.isTunnel &&
+                        r.points != null && r.points.Length >= 2)
                     {
                         items.Add((r.layer, r.osmId, 2, r.points, config.railwayWidth, (ushort)CellFlags.Rail));
                     }
@@ -578,13 +596,18 @@ namespace ZombieCity.City.Core
         }
 
         static int StampLinearClearWaterA(
-            CityGrid grid, ushort[] flags, Vec2d[] points, float width, ushort bits, RasterStats stats)
+            CityGrid grid, ushort[] flags, Vec2d[] points, float width, ushort bits, RasterStats stats, bool clearRail)
         {
             int stamped = 0;
             RasterPrimitives.ForEachPolylineCapsuleA(grid, points, width, (i, j) =>
             {
                 int idx = grid.Index(i, j);
                 ClearWaterIfSet(flags, idx, stats);
+                if (clearRail)
+                {
+                    ClearRailIfSet(flags, idx, stats);
+                }
+
                 flags[idx] |= bits;
                 stamped++;
             });
@@ -597,6 +620,15 @@ namespace ZombieCity.City.Core
             {
                 flags[idx] = (ushort)(flags[idx] & ~(ushort)CellFlags.Water);
                 stats.waterClearedByLinear++;
+            }
+        }
+
+        static void ClearRailIfSet(ushort[] flags, int idx, RasterStats stats)
+        {
+            if ((flags[idx] & (ushort)CellFlags.Rail) != 0)
+            {
+                flags[idx] = (ushort)(flags[idx] & ~(ushort)CellFlags.Rail);
+                stats.railClearedByLinear++;
             }
         }
 

@@ -315,6 +315,7 @@ namespace ZombieCity.City.Core
                     railways.Add(new Railway
                     {
                         osmId = way.Id,
+                        kind = RailwayKindParser.Parse(railway),
                         isBridge = TagValueParser.IsBridge(tags),
                         isTunnel = isTunnel || subway,
                         layer = TagValueParser.ParseLayer(tags),
