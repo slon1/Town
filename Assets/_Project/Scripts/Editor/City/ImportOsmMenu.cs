@@ -6,7 +6,7 @@ using ZombieCity.City.Core;
 namespace ZombieCity.City.EditorTools
 {
     /// <summary>
-    /// Editor menu stub for OSM import (full pipeline in later TASK-001 steps).
+    /// Editor menu for OSM import. 1C: parse + log stats (CityModel write in 1E).
     /// </summary>
     public static class ImportOsmMenu
     {
@@ -37,7 +37,25 @@ namespace ZombieCity.City.EditorTools
             }
 
             EditorPrefs.SetString(PrefsKey, path);
-            Debug.Log($"[City] Import OSM stub selected: {path}");
+            ParseAndLog(path);
+        }
+
+        /// <summary>Parse path and write a single [City] summary block (used by menu and MCP checks).</summary>
+        public static OsmDocument ParseAndLog(string path)
+        {
+            OsmDocument doc = OsmXmlParser.ParseFile(path);
+            OsmParseStats s = doc.Stats;
+            LocalEquirectangularProjection proj = doc.CreateProjection();
+            Debug.Log(
+                $"[City] OSM parse OK\n" +
+                $"  file: {path}\n" +
+                $"  nodes={s.NodeCount} ways={s.WayCount} relations={s.RelationCount} multipolygons={s.MultipolygonCount}\n" +
+                $"  bounds=({s.MinLat:F7},{s.MinLon:F7})-({s.MaxLat:F7},{s.MaxLon:F7})" +
+                $" hasBounds={s.HasBounds} fromNodes={s.BoundsComputedFromNodes}\n" +
+                $"  lat0={proj.Lat0:F7} lon0={proj.Lon0:F7}\n" +
+                $"  warnings: invisible={s.SkippedInvisible} missingNodeRefs={s.MissingNodeRefs} missingWayMembers={s.MissingWayMemberRefs}\n" +
+                $"  elapsedMs={s.ElapsedMs:F1}");
+            return doc;
         }
     }
 }
