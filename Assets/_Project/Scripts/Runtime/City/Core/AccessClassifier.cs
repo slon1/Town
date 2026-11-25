@@ -3,13 +3,29 @@ using System;
 namespace ZombieCity.City.Core
 {
     /// <summary>
-    /// Pure Access classifier (ADR-003 §2). Stub until 3B implementation commit.
+    /// Pure Access classifier (ADR-003 §2).
     /// </summary>
     public static class AccessClassifier
     {
+        const CellFlags ObstacleBits =
+            CellFlags.Building | CellFlags.Water | CellFlags.Barrier | CellFlags.Rail;
+
+        const CellFlags PedestrianOnRoadBits =
+            CellFlags.Sidewalk | CellFlags.SidewalkGenerated | CellFlags.Crosswalk |
+            CellFlags.Steps | CellFlags.Cycleway | CellFlags.Shared;
+
         public static CityAccess Classify(CellFlags flags)
         {
-            // Intentional stub — replaced in [TASK-003/3B].
+            if ((flags & ObstacleBits) != 0)
+            {
+                return CityAccess.Obstacle;
+            }
+
+            if ((flags & CellFlags.Road) != 0 && (flags & PedestrianOnRoadBits) == 0)
+            {
+                return CityAccess.Roadway;
+            }
+
             return CityAccess.Pedestrian;
         }
 

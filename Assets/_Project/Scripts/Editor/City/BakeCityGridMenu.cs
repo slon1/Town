@@ -67,13 +67,14 @@ namespace ZombieCity.City.EditorTools
                 }
 
                 string guidBefore = AssetDatabase.AssetPathToGUID(assetPath);
+                ulong dataHashBefore = asset.dataHash;
                 asset.ApplyBakeResult(result);
                 EditorUtility.SetDirty(asset);
                 AssetDatabase.SaveAssets();
                 string guidAfter = AssetDatabase.AssetPathToGUID(assetPath);
 
                 sw.Stop();
-                LogSummary(result, sw.ElapsedMilliseconds, guidBefore == guidAfter, created);
+                LogSummary(result, asset, sw.ElapsedMilliseconds, guidBefore == guidAfter, created, dataHashBefore);
                 return assetPath;
             }
             finally
@@ -82,13 +83,20 @@ namespace ZombieCity.City.EditorTools
             }
         }
 
-        static void LogSummary(RasterBakeResult r, long ms, bool guidStable, bool created)
+        static void LogSummary(
+            RasterBakeResult r, CityBakeAsset asset, long ms, bool guidStable, bool created, ulong dataHashBefore)
         {
             var sb = new StringBuilder();
             sb.AppendLine("[City] Bake Grid summary");
             sb.AppendLine($"  grid={r.grid.w}×{r.grid.h} cell={r.grid.cell} m  origin=({r.grid.origin.x:F2},{r.grid.origin.z:F2})");
             sb.AppendLine($"  time={ms} ms  created={created} guidStable={guidStable}");
             sb.AppendLine($"  dataHash=0x{r.dataHash:X16}  configHash=0x{r.configHash:X16}  modelHash=0x{r.modelDataHash:X16}");
+            sb.AppendLine($"  accessHash=0x{asset.accessHash:X16}");
+            if (dataHashBefore != 0)
+            {
+                sb.AppendLine($"  dataHashBefore=0x{dataHashBefore:X16} unchanged={(dataHashBefore == r.dataHash)}");
+            }
+
             sb.AppendLine($"  buildings={r.stats.buildingCount} zeroCells={r.stats.buildingsWithZeroCells} conflicts={r.stats.buildingConflicts}");
             sb.AppendLine($"  underBridges={r.stats.cellsUnderBridges} waterCleared={r.stats.waterClearedByLinear} outside={r.stats.objectsOutsideGrid}");
             sb.AppendLine($"  Road|Crosswalk cells={r.stats.cellsRoadAndCrosswalk}");

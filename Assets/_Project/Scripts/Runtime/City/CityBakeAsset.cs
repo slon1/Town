@@ -25,9 +25,13 @@ namespace ZombieCity.City
         public BuildingRasterInfo[] buildings = Array.Empty<BuildingRasterInfo>();
         public RasterStats stats = new RasterStats();
 
+        /// <summary>One byte per cell — <see cref="CityAccess"/> (ADR-003 §3).</summary>
+        public byte[] access = Array.Empty<byte>();
+
         public ulong modelDataHash;
         public ulong configHash;
         public ulong dataHash;
+        public ulong accessHash;
 
         [NonSerialized] ushort[] _flagsCache;
         [NonSerialized] ushort[] _buildingIdCache;
@@ -56,6 +60,23 @@ namespace ZombieCity.City
             return _buildingIdCache[i + j * w];
         }
 
+        public CityAccess GetAccess(int i, int j)
+        {
+            EnsureCaches();
+            if (access == null || i < 0 || j < 0 || i >= w || j >= h)
+            {
+                return CityAccess.Obstacle;
+            }
+
+            int idx = i + j * w;
+            if (idx < 0 || idx >= access.Length)
+            {
+                return CityAccess.Obstacle;
+            }
+
+            return (CityAccess)access[idx];
+        }
+
         public void ApplyBakeResult(RasterBakeResult result)
         {
             if (result == null)
@@ -77,6 +98,28 @@ namespace ZombieCity.City
             dataHash = result.dataHash;
             _flagsCache = result.flags;
             _buildingIdCache = result.buildingId;
+            RebuildAccessFromFlags(result.flags);
+        }
+
+        /// <summary>
+        /// Rebuilds <see cref="access"/> / <see cref="accessHash"/> from flags.
+        /// Does not change <see cref="dataHash"/> (ADR-003 §3).
+        /// </summary>
+        public void RebuildAccessFromFlags(ushort[] flags = null)
+        {
+            EnsureCaches();
+            ushort[] src = flags ?? _flagsCache;
+            if (src == null || src.Length != w * h)
+            {
+                access = Array.Empty<byte>();
+                accessHash = 0;
+                return;
+            }
+
+            var buf = new byte[src.Length];
+            AccessClassifier.ClassifyAll(src, buf);
+            access = buf;
+            accessHash = Fnv1a64.Compute(buf);
         }
 
         public ushort[] GetFlagsArray()
@@ -102,6 +145,16 @@ namespace ZombieCity.City
 
             _flagsCache = BytesToUshortLE(flagsBytes, expected);
             _buildingIdCache = BytesToUshortLE(buildingIdBytes, expected);
+        }
+
+        public byte[] GetAccessArray()
+        {
+            if (access == null || access.Length != w * h)
+            {
+                RebuildAccessFromFlags();
+            }
+
+            return access;
         }
 
         static byte[] UshortToBytesLE(ushort[] src)

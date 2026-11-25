@@ -10,5 +10,6 @@ namespace ZombieCity.City
         CityGrid Grid { get; }
         CellFlags GetFlags(int i, int j);
         ushort GetBuildingId(int i, int j);
+        CityAccess GetAccess(int i, int j);
     }
 }
