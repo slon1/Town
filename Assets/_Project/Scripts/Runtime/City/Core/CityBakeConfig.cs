@@ -90,11 +90,84 @@ namespace ZombieCity.City.Core
         };
 
         /// <summary>
-        /// Stub for 1A. Real FNV-1a canonical bytes come in 1B.
+        /// Canonical semantic bytes for settings hash (ADR-001 §4). No GUID / asset names.
         /// </summary>
         public byte[] CanonicalBytes()
         {
-            return Array.Empty<byte>();
+            var w = new CanonicalWriter();
+            w.WriteMeters(metersPerLane);
+            w.WriteMeters(defaultBuildingHeight);
+            w.WriteMeters(metersPerLevel);
+            w.WriteMeters(roofLevelMeters);
+            w.WriteBool(useRoofLevels);
+            w.WriteMeters(minBuildingHeight);
+            w.WriteMeters(waterwayWidth);
+            w.WriteMeters(cellSize);
+            w.WriteMeters(sidewalkWidth);
+            w.WriteMeters(sidewalkSearchRadius);
+            w.WriteMeters(barrierWidth);
+            w.WriteMeters(crosswalkWidthFallback);
+            w.WriteBool(useCropBBox);
+            w.WriteLatLon(cropMinLat);
+            w.WriteLatLon(cropMinLon);
+            w.WriteLatLon(cropMaxLat);
+            w.WriteLatLon(cropMaxLon);
+            WriteSortedFloatByKey(w, roadWidths);
+            WriteSortedFloatByKey(w, walkwayWidths);
+            WriteSortedStrings(w, highwayRoadTags);
+            WriteSortedStrings(w, highwayWalkwayTags);
+            WriteSortedStrings(w, barrierTags);
+            WriteSortedStrings(w, railwayTags);
+            WriteSortedStrings(w, landuseTags);
+            WriteSortedStrings(w, leisureTags);
+            WriteSortedStrings(w, naturalTags);
+            return w.ToArray();
+        }
+
+        public ulong ComputeSettingsHash()
+        {
+            return Fnv1a64.Compute(CanonicalBytes());
+        }
+
+        static void WriteSortedFloatByKey(CanonicalWriter w, FloatByKey[] entries)
+        {
+            if (entries == null || entries.Length == 0)
+            {
+                w.WriteInt32(0);
+                return;
+            }
+
+            var copy = new FloatByKey[entries.Length];
+            Array.Copy(entries, copy, entries.Length);
+            Array.Sort(copy, CompareFloatByKey);
+            w.WriteInt32(copy.Length);
+            for (int i = 0; i < copy.Length; i++)
+            {
+                FloatByKey e = copy[i] ?? new FloatByKey();
+                w.WriteString(e.key);
+                w.WriteMeters(e.value);
+            }
+        }
+
+        static void WriteSortedStrings(CanonicalWriter w, string[] values)
+        {
+            if (values == null || values.Length == 0)
+            {
+                w.WriteInt32(0);
+                return;
+            }
+
+            var copy = new string[values.Length];
+            Array.Copy(values, copy, values.Length);
+            Array.Sort(copy, StringComparer.Ordinal);
+            w.WriteStringArray(copy);
+        }
+
+        static int CompareFloatByKey(FloatByKey a, FloatByKey b)
+        {
+            string ka = a != null ? a.key : null;
+            string kb = b != null ? b.key : null;
+            return string.CompareOrdinal(ka, kb);
         }
 
         public float GetRoadWidth(string key, float fallback = 6f)
