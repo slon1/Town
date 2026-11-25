@@ -14,10 +14,10 @@ namespace ZombieCity.City.Core.Tests
         public const ulong FixtureDataHash = 0x7C5E533F40D6361BUL;
 
         /// <summary>
-        /// Golden settings hash for default <see cref="CityBakeConfig"/> (ADR-002 §7: +railwayWidth/+gateRadius).
-        /// Was 0x24472141C5F413C9 before P2 (CityModel_map.asset).
+        /// Golden settings hash for default <see cref="CityBakeConfig"/>.
+        /// Was 0x24472141C5F413C9 (pre-P2) → 0x09A4C90D0BFD89D7 (P2 railway/gate) → 0xC8F8DE8B56EBA46F (+islandMinCells P3).
         /// </summary>
-        public const ulong DefaultSettingsHash = 0x09A4C90D0BFD89D7UL;
+        public const ulong DefaultSettingsHash = 0xC8F8DE8B56EBA46FUL;
 
         [Test]
         public void CityBakeConfig_CanonicalBytes_StableAndNonEmpty()

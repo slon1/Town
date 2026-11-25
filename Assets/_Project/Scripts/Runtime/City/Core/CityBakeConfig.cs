@@ -44,6 +44,7 @@ namespace ZombieCity.City.Core
         public float crosswalkWidthFallback = 3f;
         public float railwayWidth = 3f;
         public float gateRadius = 1.5f;
+        public int islandMinCells = 200;
 
         public bool useCropBBox;
         public double cropMinLat;
@@ -111,6 +112,7 @@ namespace ZombieCity.City.Core
             w.WriteMeters(crosswalkWidthFallback);
             w.WriteMeters(railwayWidth);
             w.WriteMeters(gateRadius);
+            w.WriteInt32(islandMinCells);
             w.WriteBool(useCropBBox);
             w.WriteLatLon(cropMinLat);
             w.WriteLatLon(cropMinLon);

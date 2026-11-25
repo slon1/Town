@@ -75,12 +75,12 @@ namespace ZombieCity.City.Core.Tests
         [Test]
         public void IslandBelowThreshold_Listed()
         {
-            int w = 10, h = 10;
+            int w = 20, h = 20;
             var access = new byte[w * h];
-            // большая область
-            FillRect(access, w, 0, 0, 7, 7, CityAccess.Pedestrian);
+            // большая область 15×15 = 225 ≥ порога 200
+            FillRect(access, w, 0, 0, 14, 14, CityAccess.Pedestrian);
             // остров 2×2 = 4 клетки < 200
-            FillRect(access, w, 8, 8, 9, 9, CityAccess.Pedestrian);
+            FillRect(access, w, 18, 18, 19, 19, CityAccess.Pedestrian);
 
             var report = AccessConnectivity.Analyze(
                 Grid(w, h, 0.5f), access, null, islandMinCells: 200,
