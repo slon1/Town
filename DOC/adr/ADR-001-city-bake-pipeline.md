@@ -1,6 +1,6 @@
 # ADR-001 — Офлайн-запекание города из OSM в модель и растровые слои
 
-Статус: **Принято** (v1.2, после решений оператора и вопросов исполнителя). Охватывает фазы P1–P3; контракты P4+ уточняются отдельными ADR.
+Статус: **Принято** (v1.3: у `Railway` поле `RailwayKind`). Охватывает фазы P1–P3; контракты P4+ уточняются отдельными ADR.
 
 Область: только загрузка и разметка города. Агенты, поля управления и фреймворк частиц **вне объёма** (решение оператора).
 
@@ -43,7 +43,7 @@
 | `Walkway` (линия) | `osmId`, `WalkwayKind` (Footway, Sidewalk, Crossing, Path, Steps, Cycleway, Pedestrian), `widthM`, `layer`, `isBridge`, `isTunnel`, `isBuildingPassage`, точки |
 | `Area` (полигон с дырами) | `osmId`, `AreaKind` (Building, Water, Green, PedestrianArea, Other), кольца (outer CCW, holes CW), для зданий: `heightM`, `minHeightM`, `buildingType` (string) |
 | `Barrier` (линия) | `osmId`, `BarrierKind` (Wall, Fence, Hedge, Other, Gate-узлы отдельно), точки |
-| `Railway` (линия) | `osmId`, `isBridge`, `isTunnel`, `layer`, точки |
+| `Railway` (линия) | `osmId`, `RailwayKind` (`Rail`, `LightRail`, `Subway`, `Tram`, `NarrowGauge`, `Other`), `isBridge`, `isTunnel`, `layer`, точки |
 | `Waterway` (линия) | `osmId`, `WaterwayKind` (Canal, River, Stream, Other), `isTunnel` (в т. ч. culvert), точки |
 | `PointFeature` | `osmId`, `PointKind` (CrossingNode, TrafficSignal, Gate, Entrance), позиция |
 | `Stats` | счётчики по классам, длины, предупреждения (сводка) |
@@ -56,7 +56,7 @@
 - **Здания**: `building` ≠ `no`. Высота: `height` (парсить число, «m», допускается запятая как десятичный разделитель) → иначе `building:levels · 3.0` + `roof:levels · 1.5`(необязательно, из настроек) → иначе `defaultBuildingHeight` (12 м). Минимум 3 м. `building:part` пока игнорируется (учитывать счётчиком).
 - **Зелень**: `leisure` ∈ park, garden, playground, pitch; `landuse` ∈ grass, forest, meadow, village_green, recreation_ground; `natural` ∈ wood, scrub, grassland. **Вода**: `natural=water`, `waterway=riverbank`; линии `waterway=canal|river|stream` хранятся как `Waterway`; в P2 растеризуются шириной `waterwayWidth` (по умолчанию 4 м; осознанное упрощение); `tunnel`/`culvert` → `isTunnel`, в растр не попадают.
 - **Барьеры**: `barrier` ∈ wall, fence, hedge, retaining_wall, guard_rail, city_wall, ... (список в настройках). Узлы `barrier=gate|entrance|lift_gate|bollard` — `PointFeature` (ворота открывают проход; линия барьера в модели **не разрезается**, проём делается только в растре, бит `Gate`).
-- **Железная дорога**: `railway` ∈ rail, light_rail, subway, tram, narrow_gauge (список в настройках); `subway` и туннели уходят в `isTunnel` и в растр не попадают.
+- **Железная дорога**: `railway` ∈ rail, light_rail, subway, tram, narrow_gauge (список в настройках); `subway` и туннели уходят в `isTunnel` и в растр не попадают. Значение тега хранится как `RailwayKind` (неизвестное значение — `Other`). В канонических байтах это `int32` сразу после `osmId`.
 - Остальные теги игнорируются; игнорируемые объекты не логируются поштучно.
 - **Один way — одна сущность по смыслу тега `highway`.** Значение `highway` однозначно определяет `Road` либо `Walkway`; теги доступа (`foot`, `bicycle`, `motor_vehicle`, `access`) в P1 **не учитываются** (кроме исключения для `track`). Way с `building` даёт `Area`, независимо от наличия других тегов; `barrier`/`railway`/`waterway` — свои сущности; один way может породить несколько сущностей разных видов, но не две сущности одного вида.
 - `sidewalk=*`, `cycleway=*` на дороге: только `sidewalkMode`; отдельные `Walkway` не создаются.
