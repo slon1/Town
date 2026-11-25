@@ -425,5 +425,83 @@ namespace ZombieCity.City.Core
             report.roadRailCellCount = centers.Count;
             report.roadRailCenters = centers.ToArray();
         }
+
+        /// <summary>Size bins of ADR-003 §4.1. Stub until [TASK-004/4C].</summary>
+        public struct SizeHistogram
+        {
+            public int upTo10;
+            public int from11To50;
+            public int from51To199;
+            public int atLeast200;
+        }
+
+        public enum CrossingEndStatus : byte
+        {
+            BothEndsSameComponent = 0,
+            ConnectsDifferent = 1,
+            OneEndWithoutSidewalk = 2,
+            BothEndsWithoutSidewalk = 3
+        }
+
+        public struct CrossingEnd
+        {
+            public bool hasSidewalk;
+            public int componentId;
+            public double distanceM;
+        }
+
+        public struct CrossingRow
+        {
+            public long osmId;
+            public int cellCount;
+            public CrossingEnd end0;
+            public CrossingEnd end1;
+            public CrossingEndStatus status;
+        }
+
+        public struct CellCluster
+        {
+            public int cellCount;
+            public double centerX;
+            public double centerZ;
+        }
+
+        /// <summary>Stub for 4C-tests (red). Replaced in [TASK-004/4C].</summary>
+        public sealed class StrictDiagnostics
+        {
+            public int componentsWithoutCrosswalk;
+            public int componentsWithCrosswalk;
+            public int crosswalkGroupCount;
+            public int connectingGroupCount;
+            public int unmarkedCellCount;
+            public int unmarkedClusterCount;
+            public CellCluster[] unmarkedLargest = Array.Empty<CellCluster>();
+            public CrossingRow[] crossings = Array.Empty<CrossingRow>();
+            public ComponentInfo[] strictWithout = Array.Empty<ComponentInfo>();
+            public ComponentInfo[] strictWith = Array.Empty<ComponentInfo>();
+            public SizeHistogram histogramStrict;
+            public SizeHistogram histogramPedestrian;
+        }
+
+        public static SizeHistogram Histogram(int[] cellCounts)
+        {
+            return default;
+        }
+
+        public static string FormatEnd(CrossingEnd end)
+        {
+            return string.Empty;
+        }
+
+        public static StrictDiagnostics AnalyzeStrict(
+            CityGrid grid,
+            byte[] access,
+            ushort[] flags,
+            Walkway[] walkways,
+            float searchRadiusM,
+            float crosswalkWidthFallback)
+        {
+            return new StrictDiagnostics();
+        }
     }
 }
