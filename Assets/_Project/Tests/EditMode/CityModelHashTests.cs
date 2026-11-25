@@ -13,6 +13,12 @@ namespace ZombieCity.City.Core.Tests
         /// </summary>
         public const ulong FixtureDataHash = 0x7C5E533F40D6361BUL;
 
+        /// <summary>
+        /// Golden settings hash for default <see cref="CityBakeConfig"/> (ADR-002 §7: +railwayWidth/+gateRadius).
+        /// Was 0x24472141C5F413C9 before P2 (CityModel_map.asset).
+        /// </summary>
+        public const ulong DefaultSettingsHash = 0x09A4C90D0BFD89D7UL;
+
         [Test]
         public void CityBakeConfig_CanonicalBytes_StableAndNonEmpty()
         {
@@ -23,6 +29,13 @@ namespace ZombieCity.City.Core.Tests
             Assert.Greater(ba.Length, 0);
             Assert.AreEqual(ba, bb);
             Assert.AreEqual(a.ComputeSettingsHash(), b.ComputeSettingsHash());
+        }
+
+        [Test]
+        public void CityBakeConfig_DefaultSettingsHash_MatchesGolden()
+        {
+            Assert.AreEqual(DefaultSettingsHash, new CityBakeConfig().ComputeSettingsHash(),
+                "Update DefaultSettingsHash if CanonicalBytes intentionally changed (ADR-002 §7).");
         }
 
         [Test]
