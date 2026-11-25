@@ -21,7 +21,13 @@ namespace ZombieCity.City.Core
                 throw new ArgumentException("flags length must be >= grid.CellCount", nameof(flags));
             }
 
-            if (rings == null || rings.Length == 0)
+            ForEachPolygonCellA(grid, rings, (i, j) => { flags[grid.Index(i, j)] |= bit; });
+        }
+
+        /// <summary>Visits cells whose centers are inside the polygon (even-odd).</summary>
+        public static void ForEachPolygonCellA(CityGrid grid, Vec2d[][] rings, Action<int, int> onCell)
+        {
+            if (onCell == null || rings == null || rings.Length == 0)
             {
                 return;
             }
@@ -31,35 +37,14 @@ namespace ZombieCity.City.Core
                 return;
             }
 
-            grid.WorldToCell(new Vec2d(minX, minZ), out int i0, out int j0);
-            grid.WorldToCell(new Vec2d(maxX, maxZ), out int i1, out int j1);
-            if (i0 > i1)
-            {
-                int t = i0;
-                i0 = i1;
-                i1 = t;
-            }
-
-            if (j0 > j1)
-            {
-                int t = j0;
-                j0 = j1;
-                j1 = t;
-            }
-
-            i0 = Math.Max(0, i0);
-            j0 = Math.Max(0, j0);
-            i1 = Math.Min(grid.w - 1, i1);
-            j1 = Math.Min(grid.h - 1, j1);
-
+            GetCellRange(grid, minX, minZ, maxX, maxZ, 0, out int i0, out int j0, out int i1, out int j1);
             for (int j = j0; j <= j1; j++)
             {
                 for (int i = i0; i <= i1; i++)
                 {
-                    Vec2d c = grid.CellCenter(i, j);
-                    if (PointInPolygonEvenOdd(c, rings))
+                    if (PointInPolygonEvenOdd(grid.CellCenter(i, j), rings))
                     {
-                        flags[grid.Index(i, j)] |= bit;
+                        onCell(i, j);
                     }
                 }
             }
@@ -75,7 +60,12 @@ namespace ZombieCity.City.Core
                 throw new ArgumentException("flags length must be >= grid.CellCount", nameof(flags));
             }
 
-            if (points == null || points.Length < 2)
+            ForEachPolylineCapsuleA(grid, points, width, (i, j) => { flags[grid.Index(i, j)] |= bit; });
+        }
+
+        public static void ForEachPolylineCapsuleA(CityGrid grid, Vec2d[] points, float width, Action<int, int> onCell)
+        {
+            if (onCell == null || points == null || points.Length < 2)
             {
                 return;
             }
@@ -83,7 +73,7 @@ namespace ZombieCity.City.Core
             double half = Math.Max(width * 0.5, grid.cell * 0.5);
             for (int s = 0; s < points.Length - 1; s++)
             {
-                StampSegmentCapsuleA(grid, flags, points[s], points[s + 1], half, bit);
+                ForEachSegmentCapsuleA(grid, points[s], points[s + 1], half, onCell);
             }
         }
 
@@ -98,7 +88,12 @@ namespace ZombieCity.City.Core
                 throw new ArgumentException("flags length must be >= grid.CellCount", nameof(flags));
             }
 
-            if (points == null || points.Length < 2)
+            ForEachPolylineCapsuleB(grid, points, width, (i, j) => { flags[grid.Index(i, j)] |= bit; });
+        }
+
+        public static void ForEachPolylineCapsuleB(CityGrid grid, Vec2d[] points, float width, Action<int, int> onCell)
+        {
+            if (onCell == null || points == null || points.Length < 2)
             {
                 return;
             }
@@ -106,82 +101,47 @@ namespace ZombieCity.City.Core
             double half = width * 0.5;
             for (int s = 0; s < points.Length - 1; s++)
             {
-                StampSegmentCapsuleB(grid, flags, points[s], points[s + 1], half, bit);
+                ForEachSegmentCapsuleB(grid, points[s], points[s + 1], half, onCell);
             }
         }
 
-        static void StampSegmentCapsuleA(
-            CityGrid grid, ushort[] flags, Vec2d a, Vec2d b, double half, ushort bit)
+        static void ForEachSegmentCapsuleA(
+            CityGrid grid, Vec2d a, Vec2d b, double half, Action<int, int> onCell)
         {
             double pad = half + grid.cell;
-            double minX = Math.Min(a.x, b.x) - pad;
-            double maxX = Math.Max(a.x, b.x) + pad;
-            double minZ = Math.Min(a.z, b.z) - pad;
-            double maxZ = Math.Max(a.z, b.z) + pad;
-
-            grid.WorldToCell(new Vec2d(minX, minZ), out int i0, out int j0);
-            grid.WorldToCell(new Vec2d(maxX, maxZ), out int i1, out int j1);
-            if (i0 > i1)
-            {
-                int t = i0;
-                i0 = i1;
-                i1 = t;
-            }
-
-            if (j0 > j1)
-            {
-                int t = j0;
-                j0 = j1;
-                j1 = t;
-            }
-
-            i0 = Math.Max(0, i0);
-            j0 = Math.Max(0, j0);
-            i1 = Math.Min(grid.w - 1, i1);
-            j1 = Math.Min(grid.h - 1, j1);
+            GetCellRange(
+                grid,
+                Math.Min(a.x, b.x) - pad,
+                Math.Min(a.z, b.z) - pad,
+                Math.Max(a.x, b.x) + pad,
+                Math.Max(a.z, b.z) + pad,
+                0,
+                out int i0, out int j0, out int i1, out int j1);
 
             for (int j = j0; j <= j1; j++)
             {
                 for (int i = i0; i <= i1; i++)
                 {
-                    Vec2d c = grid.CellCenter(i, j);
-                    if (DistancePointToSegment(c, a, b) <= half + Eps)
+                    if (DistancePointToSegment(grid.CellCenter(i, j), a, b) <= half + Eps)
                     {
-                        flags[grid.Index(i, j)] |= bit;
+                        onCell(i, j);
                     }
                 }
             }
         }
 
-        static void StampSegmentCapsuleB(
-            CityGrid grid, ushort[] flags, Vec2d a, Vec2d b, double half, ushort bit)
+        static void ForEachSegmentCapsuleB(
+            CityGrid grid, Vec2d a, Vec2d b, double half, Action<int, int> onCell)
         {
             double pad = half + grid.cell;
-            double minX = Math.Min(a.x, b.x) - pad;
-            double maxX = Math.Max(a.x, b.x) + pad;
-            double minZ = Math.Min(a.z, b.z) - pad;
-            double maxZ = Math.Max(a.z, b.z) + pad;
-
-            grid.WorldToCell(new Vec2d(minX, minZ), out int i0, out int j0);
-            grid.WorldToCell(new Vec2d(maxX, maxZ), out int i1, out int j1);
-            if (i0 > i1)
-            {
-                int t = i0;
-                i0 = i1;
-                i1 = t;
-            }
-
-            if (j0 > j1)
-            {
-                int t = j0;
-                j0 = j1;
-                j1 = t;
-            }
-
-            i0 = Math.Max(0, i0);
-            j0 = Math.Max(0, j0);
-            i1 = Math.Min(grid.w - 1, i1);
-            j1 = Math.Min(grid.h - 1, j1);
+            GetCellRange(
+                grid,
+                Math.Min(a.x, b.x) - pad,
+                Math.Min(a.z, b.z) - pad,
+                Math.Max(a.x, b.x) + pad,
+                Math.Max(a.z, b.z) + pad,
+                0,
+                out int i0, out int j0, out int i1, out int j1);
 
             double cell = grid.cell;
             for (int j = j0; j <= j1; j++)
@@ -189,12 +149,48 @@ namespace ZombieCity.City.Core
                 for (int i = i0; i <= i1; i++)
                 {
                     Vec2d mn = grid.CellMin(i, j);
-                    // Capsule∩closed square: Euclidean distance(segment, AABB) ≤ half.
                     if (DistanceSegmentToAabb(a, b, mn.x, mn.z, mn.x + cell, mn.z + cell) <= half + Eps)
                     {
-                        flags[grid.Index(i, j)] |= bit;
+                        onCell(i, j);
                     }
                 }
+            }
+        }
+
+        static void GetCellRange(
+            CityGrid grid,
+            double minX, double minZ, double maxX, double maxZ,
+            double pad,
+            out int i0, out int j0, out int i1, out int j1)
+        {
+            grid.WorldToCell(new Vec2d(minX - pad, minZ - pad), out i0, out j0);
+            grid.WorldToCell(new Vec2d(maxX + pad, maxZ + pad), out i1, out j1);
+            if (i0 > i1)
+            {
+                int t = i0;
+                i0 = i1;
+                i1 = t;
+            }
+
+            if (j0 > j1)
+            {
+                int t = j0;
+                j0 = j1;
+                j1 = t;
+            }
+
+            i0 = Math.Max(0, i0);
+            j0 = Math.Max(0, j0);
+            i1 = Math.Min(grid.w - 1, i1);
+            j1 = Math.Min(grid.h - 1, j1);
+            if (i1 < i0)
+            {
+                i1 = i0 - 1;
+            }
+
+            if (j1 < j0)
+            {
+                j1 = j0 - 1;
             }
         }
 
