@@ -75,6 +75,7 @@ namespace ZombieCity.City.Core
     public class Railway
     {
         public long osmId;
+        public RailwayKind kind;
         public bool isBridge;
         public bool isTunnel;
         public int layer;

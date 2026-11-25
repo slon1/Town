@@ -26,6 +26,8 @@ namespace ZombieCity.City.Core
         public int objectsOutsideGrid;
         public int cellsRoadAndCrosswalk;
         public int waterClearedByLinear;
+        public int railClearedByLinear;
+        public int tramSkipped;
         public int buildingCount;
     }
 

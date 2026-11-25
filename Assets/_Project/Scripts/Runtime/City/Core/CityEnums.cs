@@ -43,6 +43,16 @@ namespace ZombieCity.City.Core
         Other = 3
     }
 
+    public enum RailwayKind
+    {
+        Rail = 0,
+        LightRail = 1,
+        Subway = 2,
+        Tram = 3,
+        NarrowGauge = 4,
+        Other = 5
+    }
+
     public enum WaterwayKind
     {
         Canal = 0,
