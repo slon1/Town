@@ -36,7 +36,7 @@
 | 2 | `Area(Water)`; `Waterway` (не `isTunnel`) шириной `waterwayWidth` | `Water` (A) |
 | 3 | `Road` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`), шириной `widthM` | `Road` (A); при `isShared` + `Shared`; **снимает `Water` и `Rail`** (см. ниже) |
 | 4 | `Walkway` (не `isTunnel`, не `isBridge`, не `isBuildingPassage`) | `Footway`/`Sidewalk`/`Path`/`Pedestrian` → `Sidewalk`; `Cycleway` → `Cycleway`; `Steps` → `Steps`; **`Crossing` → `Crosswalk`** (поверх клеток `Road`, бит `Road` сохраняется; ширина `widthM`, иначе `crosswalkWidthFallback`); `Area(PedestrianArea)` → `Sidewalk` (A); **снимает `Water` и `Rail`** (см. ниже) |
-| 5 | `Railway` (не `isTunnel`, не `isBridge`, не `kind == Tram`) шириной `railwayWidth`. Шаг выполняется **между 2 и 3** | `Rail` (A); **снимает `Water`** (см. ниже) |
+| 5 | `Railway` (не `isTunnel`, не `isBridge`) шириной `railwayWidth` | `Rail` (A); **снимает `Water`** (см. ниже) |
 | 6 | `Area(Building)` | `Building` + `buildingId` (A); **снимает** `Road`, `Sidewalk`, `Cycleway`, `Steps`, `Crosswalk`, `Shared`, `Green`; клетки, уже имеющие `Bridge`, не трогает (мосты ещё не нанесены — см. шаг 9) |
 | 7 | `Road` / `Walkway` с `isBuildingPassage` | ставит `BuildingPassage` + свой класс (`Road` или `Sidewalk`); **снимает** `Building`, `buildingId = 0` в этих клетках |
 | 8 | `Barrier` линии шириной `barrierWidth` | `Barrier` (B); затем `PointFeature(Gate)` — диск радиуса `gateRadius`: **снять** `Barrier`, поставить `Gate` |
@@ -49,7 +49,7 @@
 **Дорога/путь/рельсы поверх воды без `bridge`.** В OSM небольшие водотоки под улицами часто не отмечены как туннель/труба, а дорога не отмечена как мост (пересечение «подразумевается»). Без правила клетки пересечения получили бы `Road` + `Water` и стали бы `Obstacle`, перерезав улицу. Поэтому шаги 3, 4 и 5 (`Road`, `Walkway`, `Railway` без `isBridge`/`isTunnel`) **снимают `Water` в своих клетках**: реальная дорога не лежит под водой, а пересечение трактуется как неотмеченный мост или труба. Число снятых клеток выводится в статистику (`waterClearedByLinear`); по нему видно, сколько таких пересечений в районе.
 
 **Рельсы (v1.2).**
-1. `Railway.kind == Tram` в растр **не попадает** (трамвай идёт по уличному полотну и не является препятствием). Счётчик `tramSkipped` — число таких **сущностей**, не клеток. В модели трамвай остаётся.
+1. `Railway` с `kind == Tram` (`railway=tram`) в растр **не попадает** (трамвай идёт по уличному полотну и не является препятствием); счётчик `tramSkipped` (число сущностей, не клеток). В модели остаётся.
 2. Шаг `Railway` выполняется **сразу после воды (между шагами 2 и 3)**, то есть до `Road` и `Walkway`.
 3. `Road` и `Walkway` (шаги 3–4, без `isBridge` / `isTunnel`) **снимают `Rail`** в своих клетках, как и `Water`: пересечение рельсов дорогой или тротуаром трактуется как переезд либо неотмеченный мост/туннель и остаётся проходимым. Счётчик `railClearedByLinear`. Рельсы на мосту (`Rail|Bridge`) остаются препятствием.
 4. После этого правила клеток `Road|Rail` без `Bridge` быть не должно (проверка в тестах и в отчёте).
