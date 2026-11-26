@@ -22,7 +22,7 @@ namespace ZombieCity.City.Core
 
     /// <summary>
     /// Roofs via LibTessDotNet EvenOdd, walls per ring edge, no floor.
-    /// Unity winding: clockwise when looking at the front face (left-handed normal).
+    /// Front face is the one Unity renders with Cull Back. Roofs face +Y.
     /// </summary>
     public static class BuildingMeshBuilder
     {
@@ -253,11 +253,11 @@ namespace ZombieCity.City.Core
                 AddVert(positions, colors, ax, y1, az, color);
                 AddVert(positions, colors, bx, y1, bz, color);
                 indices.Add(v);
-                indices.Add(v + 1);
                 indices.Add(v + 2);
                 indices.Add(v + 1);
+                indices.Add(v + 1);
+                indices.Add(v + 2);
                 indices.Add(v + 3);
-                indices.Add(v + 2);
             }
         }
 
@@ -277,8 +277,7 @@ namespace ZombieCity.City.Core
             float bx = positions[v2 * 3] - positions[v0 * 3];
             float by = positions[v2 * 3 + 1] - positions[v0 * 3 + 1];
             float bz = positions[v2 * 3 + 2] - positions[v0 * 3 + 2];
-            float ry = az * bx - ax * bz;
-            return -ry;
+            return az * bx - ax * bz;
         }
 
         static double SignedArea(IList<Vec2d> ring)

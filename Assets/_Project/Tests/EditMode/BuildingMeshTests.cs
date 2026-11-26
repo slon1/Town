@@ -252,12 +252,9 @@ namespace ZombieCity.City.Core.Tests
         {
             float ax = x1 - x0, ay = y1 - y0, az = z1 - z0;
             float bx = x2 - x0, by = y2 - y0, bz = z2 - z0;
-            float rx = ay * bz - az * by;
-            float ry = az * bx - ax * bz;
-            float rz = ax * by - ay * bx;
-            nx = -rx;
-            ny = -ry;
-            nz = -rz;
+            nx = ay * bz - az * by;
+            ny = az * bx - ax * bz;
+            nz = ax * by - ay * bx;
         }
 
         static CityModel Model(params Area[] areas)
