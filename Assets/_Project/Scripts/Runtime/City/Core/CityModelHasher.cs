@@ -142,6 +142,7 @@ namespace ZombieCity.City.Core
                 w.WriteEnum(a.kind);
                 w.WriteMeters(a.heightM);
                 w.WriteMeters(a.minHeightM);
+                w.WriteEnum(a.heightSource);
                 w.WriteString(a.buildingType);
                 w.WriteVec2dArray(a.points);
                 w.WriteInt32Array(a.ringStart);

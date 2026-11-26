@@ -11,7 +11,8 @@ namespace ZombieCity.City.Core.Tests
         /// <summary>
         /// Golden FNV-1a for <see cref="CreateFixtureModel"/> — locked after first compute in 1B.
         /// </summary>
-        public const ulong FixtureDataHash = 0x7C5E533F40D6361BUL;
+        /// Was 0x7C5E533F40D6361B before Area.heightSource (TASK-006, ADR-001 v1.4).
+        public const ulong FixtureDataHash = 0x8145898624330C7BUL;
 
         /// <summary>
         /// Golden settings hash for default <see cref="CityBakeConfig"/>.

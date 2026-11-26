@@ -159,24 +159,52 @@ namespace ZombieCity.City.Core
 
         public static float ResolveBuildingHeight(OsmTagList tags, CityBakeConfig config, out bool usedDefault)
         {
-            usedDefault = false;
+            usedDefault = ResolveHeightSource(tags, config) == HeightSource.Default;
             if (TryParseMeters(tags?.Get("height"), out float h) && h > 0)
             {
                 return Math.Max(h, config.minBuildingHeight);
             }
 
+            if (TryLevelMeters(tags, config, out float fromLevels))
+            {
+                return Math.Max(fromLevels, config.minBuildingHeight);
+            }
+
+            return Math.Max(config.defaultBuildingHeight, config.minBuildingHeight);
+        }
+
+        /// <summary>
+        /// ADR-001 v1.4: тег height → HeightTag; иначе building:levels или roof:levels → Levels; иначе Default.
+        /// </summary>
+        public static HeightSource ResolveHeightSource(OsmTagList tags, CityBakeConfig config)
+        {
+            if (TryParseMeters(tags?.Get("height"), out float h) && h > 0)
+            {
+                return HeightSource.HeightTag;
+            }
+
+            if (TryLevelMeters(tags, config, out _))
+            {
+                return HeightSource.Levels;
+            }
+
+            return HeightSource.Default;
+        }
+
+        static bool TryLevelMeters(OsmTagList tags, CityBakeConfig config, out float meters)
+        {
+            meters = 0f;
             double levels = 0;
             bool hasLevels = TryParseDouble(tags?.Get("building:levels"), out levels);
             double roofLevels = 0;
             bool hasRoof = config.useRoofLevels && TryParseDouble(tags?.Get("roof:levels"), out roofLevels);
-            if (hasLevels || hasRoof)
+            if (!hasLevels && !hasRoof)
             {
-                float fromLevels = (float)(levels * config.metersPerLevel + roofLevels * config.roofLevelMeters);
-                return Math.Max(fromLevels, config.minBuildingHeight);
+                return false;
             }
 
-            usedDefault = true;
-            return Math.Max(config.defaultBuildingHeight, config.minBuildingHeight);
+            meters = (float)(levels * config.metersPerLevel + roofLevels * config.roofLevelMeters);
+            return true;
         }
 
         static string HighwayClassToWidthKey(HighwayClass cls)

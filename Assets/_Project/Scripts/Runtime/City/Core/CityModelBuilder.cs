@@ -424,8 +424,10 @@ namespace ZombieCity.City.Core
 
             float height = 0;
             float minHeight = 0;
+            HeightSource heightSource = HeightSource.HeightTag;
             if (kind == AreaKind.Building)
             {
+                heightSource = TagValueParser.ResolveHeightSource(tags, config);
                 height = TagValueParser.ResolveBuildingHeight(tags, config, out bool usedDefault);
                 if (usedDefault)
                 {
@@ -444,6 +446,7 @@ namespace ZombieCity.City.Core
                 kind = kind,
                 heightM = height,
                 minHeightM = minHeight,
+                heightSource = heightSource,
                 buildingType = buildingType ?? string.Empty,
                 points = allPoints.ToArray(),
                 ringStart = ringStart.ToArray()

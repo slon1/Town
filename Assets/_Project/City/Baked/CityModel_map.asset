@@ -24,7 +24,7 @@ MonoBehaviour:
       sizeXM: 339.4476301236044
       sizeZM: 241.96049458880464
       settingsHash: 13454048588040179324
-      dataHash: 14988015102377629251
+      dataHash: 13718167323785083980
     roads:
     - osmId: 4544065
       highwayClass: 2
@@ -2250,6 +2250,7 @@ MonoBehaviour:
       kind: 0
       heightM: 18
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -23.743080601411968
@@ -2309,6 +2310,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: retail
       points:
       - x: 152.99143337374406
@@ -2344,6 +2346,7 @@ MonoBehaviour:
       kind: 0
       heightM: 24
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 105.66752556920181
@@ -2371,6 +2374,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: -5.313798790633406
@@ -2506,6 +2510,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -45.27545865251171
@@ -2549,6 +2554,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 129.18750774814157
@@ -2574,6 +2580,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 137.69905059461036
@@ -2653,6 +2660,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -68.82924362265507
@@ -2686,6 +2694,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: sports_centre
       points:
       - x: 14.318862389923833
@@ -2715,6 +2724,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 174.6793042647887
@@ -2732,6 +2742,7 @@ MonoBehaviour:
       kind: 0
       heightM: 16.5
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -6.395488111910967
@@ -2771,6 +2782,7 @@ MonoBehaviour:
       kind: 0
       heightM: 18
       minHeightM: 0
+      heightSource: 1
       buildingType: hotel
       points:
       - x: 1.4602805836946835
@@ -2828,6 +2840,7 @@ MonoBehaviour:
       kind: 0
       heightM: 16.5
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 0.31774623810651903
@@ -2885,6 +2898,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -191.54013655980486
@@ -2942,6 +2956,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -155.9525578907939
@@ -2973,6 +2988,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -157.02748665373468
@@ -3010,6 +3026,7 @@ MonoBehaviour:
       kind: 0
       heightM: 33
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -131.25623857506238
@@ -3155,6 +3172,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -176.90352793165442
@@ -3204,6 +3222,7 @@ MonoBehaviour:
       kind: 0
       heightM: 18
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -97.83879910682325
@@ -3221,6 +3240,7 @@ MonoBehaviour:
       kind: 0
       heightM: 16.5
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -68.82248306431828
@@ -3246,6 +3266,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 86.00782215553758
@@ -3271,6 +3292,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 94.30302713787096
@@ -3296,6 +3318,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 102.69287993583863
@@ -3325,6 +3348,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 77.6990960567708
@@ -3350,6 +3374,7 @@ MonoBehaviour:
       kind: 0
       heightM: 9
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 78.01008173666061
@@ -3401,6 +3426,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 124.21173687038488
@@ -3420,6 +3446,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 196.71196362692677
@@ -3451,6 +3478,7 @@ MonoBehaviour:
       kind: 0
       heightM: 24
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 136.5294740160353
@@ -3486,6 +3514,7 @@ MonoBehaviour:
       kind: 0
       heightM: 24
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 107.2900595510581
@@ -3521,6 +3550,7 @@ MonoBehaviour:
       kind: 0
       heightM: 6
       minHeightM: 0
+      heightSource: 1
       buildingType: office
       points:
       - x: 186.922675269575
@@ -3536,6 +3566,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: warehouse
       points:
       - x: 38.18363303995701
@@ -3553,6 +3584,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: warehouse
       points:
       - x: 28.658006454737958
@@ -3572,6 +3604,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: 89.56387579913998
@@ -3595,6 +3628,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: 107.89850979428424
@@ -3620,6 +3654,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 49.16277965065404
@@ -3639,6 +3674,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 28.30645742530774
@@ -3664,6 +3700,7 @@ MonoBehaviour:
       kind: 0
       heightM: 9
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -89.38810128454496
@@ -3693,6 +3730,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -98.44048879171258
@@ -3726,6 +3764,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -113.39484365796955
@@ -3759,6 +3798,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -53.98981824680261
@@ -3792,6 +3832,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -111.45456343800673
@@ -3825,6 +3866,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -83.75655625580504
@@ -3858,6 +3900,7 @@ MonoBehaviour:
       kind: 0
       heightM: 21
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -153.66072864140088
@@ -3913,6 +3956,7 @@ MonoBehaviour:
       kind: 0
       heightM: 9
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: -91.19317033933307
@@ -3982,6 +4026,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: service
       points:
       - x: 26.163360457642913
@@ -3997,6 +4042,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -96.66922252812809
@@ -4012,6 +4058,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: yes
       points:
       - x: -72.7706490868913
@@ -4027,6 +4074,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -111.24498613196793
@@ -4044,6 +4092,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: -123.69793444279306
@@ -4059,6 +4108,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 9.525626585219051
@@ -4074,6 +4124,7 @@ MonoBehaviour:
       kind: 0
       heightM: 6
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -156.21621966280654
@@ -4093,6 +4144,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -133.5210255913484
@@ -4110,6 +4162,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -123.43427267078043
@@ -4129,6 +4182,7 @@ MonoBehaviour:
       kind: 0
       heightM: 6
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -93.70809801131841
@@ -4150,6 +4204,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -73.06135309201092
@@ -4171,6 +4226,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -137.36102268185374
@@ -4190,6 +4246,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: industrial
       points:
       - x: -62.83938900614813
@@ -4211,6 +4268,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: yes
       points:
       - x: -45.27545865251171
@@ -4232,6 +4290,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 120.79765495017388
@@ -4259,6 +4318,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 124.06300458865667
@@ -4286,6 +4346,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 159.24494976226362
@@ -4317,6 +4378,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 165.38353666025856
@@ -4338,6 +4400,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 136.8877836036822
@@ -4359,6 +4422,7 @@ MonoBehaviour:
       kind: 0
       heightM: 15
       minHeightM: 0
+      heightSource: 1
       buildingType: apartments
       points:
       - x: 138.091162973581
@@ -4384,6 +4448,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: roof
       points:
       - x: -33.66081956560164
@@ -4403,6 +4468,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: 8.6737962447505
@@ -4428,6 +4494,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: roof
       points:
       - x: 22.870968586053124
@@ -4457,6 +4524,7 @@ MonoBehaviour:
       kind: 0
       heightM: 6
       minHeightM: 0
+      heightSource: 1
       buildingType: school
       points:
       - x: -99.38020638959874
@@ -4510,6 +4578,7 @@ MonoBehaviour:
       kind: 1
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: -87.12331426813884
@@ -4605,6 +4674,7 @@ MonoBehaviour:
       kind: 1
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 82.35712069642096
@@ -4646,6 +4716,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 78.34810964953732
@@ -4679,6 +4750,7 @@ MonoBehaviour:
       kind: 0
       heightM: 19.5
       minHeightM: 0
+      heightSource: 1
       buildingType: dormitory
       points:
       - x: -179.46577951127676
@@ -4728,6 +4800,7 @@ MonoBehaviour:
       kind: 0
       heightM: 18
       minHeightM: 0
+      heightSource: 1
       buildingType: dormitory
       points:
       - x: -140.51820338814872
@@ -4745,6 +4818,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: -40.86081411010396
@@ -4764,6 +4838,7 @@ MonoBehaviour:
       kind: 0
       heightM: 3
       minHeightM: 0
+      heightSource: 1
       buildingType: school
       points:
       - x: -96.24330735795385
@@ -4787,6 +4862,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: -166.47198653987292
@@ -4816,6 +4892,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: dormitory
       points:
       - x: -124.515961992058
@@ -4833,6 +4910,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: -143.695665769334
@@ -4848,6 +4926,7 @@ MonoBehaviour:
       kind: 0
       heightM: 12
       minHeightM: 0
+      heightSource: 2
       buildingType: yes
       points:
       - x: -103.54471027630719
@@ -4863,6 +4942,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: -164.1193122661693
@@ -4898,6 +4978,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 178.5125407969572
@@ -4927,6 +5008,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 247.46347446811342
@@ -4962,6 +5044,7 @@ MonoBehaviour:
       kind: 2
       heightM: 0
       minHeightM: 0
+      heightSource: 0
       buildingType: 
       points:
       - x: 100.60386743414762
