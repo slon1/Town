@@ -15,6 +15,7 @@ namespace ZombieCity.City.UI
         [SerializeField] Toggle toggleAccess;
         [SerializeField] Toggle toggleFlags;
         [SerializeField] Toggle toggleBuildingId;
+        [SerializeField] Toggle toggleBuildings;
         [SerializeField] ToggleGroup layerGroup;
         [SerializeField] OverlayToggle overlayRailOnRoad;
         [SerializeField] OverlayToggle overlayUnmarked;
@@ -28,13 +29,15 @@ namespace ZombieCity.City.UI
         [SerializeField] GameObject collapsedChip;
 
         ILayerView _layers;
+        IBuildingsView _buildings;
         ICameraRig _cameraRig;
         bool _syncing;
 
         [Inject]
-        public void Construct(ILayerView layers, ICameraRig cameraRig)
+        public void Construct(ILayerView layers, IBuildingsView buildings, ICameraRig cameraRig)
         {
             _layers = layers;
+            _buildings = buildings;
             _cameraRig = cameraRig;
         }
 
@@ -49,16 +52,34 @@ namespace ZombieCity.City.UI
             WireOverlay(overlayCrosswalk);
             WireOverlay(overlayGate);
             WireOverlay(overlayBridge);
+            if (toggleBuildings != null)
+            {
+                toggleBuildings.onValueChanged.AddListener(on =>
+                {
+                    if (!_syncing && _buildings != null)
+                    {
+                        _buildings.Visible = on;
+                    }
+                });
+            }
+
             resetCameraButton?.onClick.AddListener(() => _cameraRig?.ResetView());
             collapseButton?.onClick.AddListener(ToggleCollapsed);
             expandButton?.onClick.AddListener(ToggleCollapsed);
             _layers.Changed += SyncFromModel;
+            if (_buildings != null)
+            {
+                _buildings.Changed += SyncBuildingsToggle;
+            }
+
             SyncFromModel();
+            SyncBuildingsToggle();
         }
 
         void OnDestroy()
         {
             if (_layers != null) _layers.Changed -= SyncFromModel;
+            if (_buildings != null) _buildings.Changed -= SyncBuildingsToggle;
         }
 
         void WireLayer(Toggle t, CityLayer layer)
@@ -94,6 +115,18 @@ namespace ZombieCity.City.UI
             overlayCrosswalk.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Crosswalk));
             overlayGate.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.GatePassage));
             overlayBridge.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Bridge));
+            _syncing = false;
+        }
+
+        void SyncBuildingsToggle()
+        {
+            if (_buildings == null || toggleBuildings == null)
+            {
+                return;
+            }
+
+            _syncing = true;
+            toggleBuildings.SetIsOnWithoutNotify(_buildings.Visible);
             _syncing = false;
         }
     }

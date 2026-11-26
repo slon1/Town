@@ -64,6 +64,59 @@ namespace ZombieCity.City.EditorTools
       }
     }
 
+    [MenuItem("City/Capture panel_buildings_toggle.png")]
+    public static void CaptureBuildingsToggleScreenshot()
+    {
+      string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", OutputDir));
+      if (!Directory.Exists(outDir))
+      {
+        Directory.CreateDirectory(outDir);
+      }
+
+      if (!EditorApplication.isPlaying)
+      {
+        UnityEditor.SceneManagement.EditorSceneManager.OpenScene(ScenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
+        EditorApplication.isPlaying = true;
+        EditorApplication.delayCall += () => EditorApplication.delayCall += CaptureBuildingsTogglePlayMode;
+        return;
+      }
+
+      CaptureBuildingsTogglePlayMode();
+    }
+
+    static void CaptureBuildingsTogglePlayMode()
+    {
+      if (!Application.isPlaying)
+      {
+        return;
+      }
+
+      var ground = Object.FindAnyObjectByType<GroundView>();
+      var buildings = Object.FindAnyObjectByType<BuildingsView>();
+      var panel = Object.FindAnyObjectByType<CityMapLayerPanel>();
+      if (ground == null || buildings == null || panel == null)
+      {
+        Debug.LogError("[City] Buildings toggle capture: scene not ready.");
+        EditorApplication.isPlaying = false;
+        return;
+      }
+
+      SetExpanded(panel, true);
+      ground.SetLayer(CityLayer.BuildingId);
+      ground.SetOverlay(CityOverlay.Crosswalk, false);
+      buildings.Visible = false;
+
+      EditorApplication.delayCall += () =>
+      {
+        EditorApplication.delayCall += () =>
+        {
+          SaveCapture("panel_buildings_toggle.png");
+          Debug.Log("[City] panel_buildings_toggle.png saved.");
+          EditorApplication.isPlaying = false;
+        };
+      };
+    }
+
     [MenuItem("City/Capture REPORT-007 Screenshots")]
     public static void StartCapture()
     {

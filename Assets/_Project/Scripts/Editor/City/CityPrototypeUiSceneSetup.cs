@@ -149,6 +149,7 @@ namespace ZombieCity.City.EditorTools
       Toggle oCrosswalk = CreateOverlayToggle(expanded, "Crosswalk");
       Toggle oGate = CreateOverlayToggle(expanded, "Gate / passage");
       Toggle oBridge = CreateOverlayToggle(expanded, "Bridge");
+      Toggle tBuildings = CreateOverlayToggle(expanded, "Здания");
       CreateButton(expanded, "ResetCamera", "Reset camera", out Button resetBtn);
 
       var collapsed = CreateChild(root.transform, "CollapsedChip");
@@ -163,6 +164,7 @@ namespace ZombieCity.City.EditorTools
       panelSo.FindProperty("toggleAccess").objectReferenceValue = tAccess;
       panelSo.FindProperty("toggleFlags").objectReferenceValue = tFlags;
       panelSo.FindProperty("toggleBuildingId").objectReferenceValue = tBuildingId;
+      panelSo.FindProperty("toggleBuildings").objectReferenceValue = tBuildings;
       panelSo.FindProperty("layerGroup").objectReferenceValue = layerGroup;
       SetOverlayBinding(panelSo, "overlayRailOnRoad", CityOverlay.RailOnRoad, oRail);
       SetOverlayBinding(panelSo, "overlayUnmarked", CityOverlay.UnmarkedCrossing, oUnmarked);

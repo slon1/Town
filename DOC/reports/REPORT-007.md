@@ -16,7 +16,8 @@
 |---|---|---|
 | Core / 006 код не менялся (кроме удаления overview) | да | `git diff main...HEAD` — нет `Core/`, `GroundView`, `BuildingsView`, `CityInstaller`, `LayerComposer` |
 | asmdef по-прежнему два | да | только `ZombieCity.City.Core` + EditMode-тесты |
-| EditMode-тесты | да | **121** passed (`ZombieCity.City.Core.Tests`) |
+| EditMode-тесты | да | **145** passed (после слияния 008 в 007, `TASK-009`) |
+| Тогл «Здания» → `IBuildingsView.Visible` | да | `panel_buildings_toggle.png`, коммит `[TASK-007/7B]` |
 | Камера + UI в `City_Prototype` | да | Play Mode, панорама/зум мышью, панель |
 | Скриншоты 1080×2160 | да | 6 файлов в `DOC/reports/img/` |
 | `CameraUiInstaller` в SceneContext | да | сцена + отчёт |
@@ -32,6 +33,7 @@
 | `task007_layer_building_id.png` | слой BuildingId |
 | `task007_camera_pitch_90.png` | камера pitch 90° (`CameraRigSettings`) |
 | `task007_camera_pitch_60.png` | камера pitch 60° (`CameraRigSettings`) |
+| `panel_buildings_toggle.png` | BuildingId, здания скрыты (`IBuildingsView.Visible = false`), панель развёрнута |
 
 ## Файлы (новые / существенные)
 
@@ -70,7 +72,7 @@
 ## Отклонения от ТЗ и почему
 
 - Скриншоты сняты через **Unity MCP `capture_game_view`** 1080×2160, не вручную из закреплённого Game View; после `ApplyReport007State` — пауза ~2 с до кадра (стабилизация pitch/текстуры).
-- Тогл «Здания» (`IBuildingsView`) **не добавлен** — по TASK-007 до TASK-008.
+- Тогл «Здания» добавлен в **TASK-009/9E** после слияния 008 (см. `panel_buildings_toggle.png`).
 
 ## ADR-change-request
 
