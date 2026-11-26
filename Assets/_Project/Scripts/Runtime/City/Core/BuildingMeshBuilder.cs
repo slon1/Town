@@ -36,6 +36,20 @@ namespace ZombieCity.City.Core
 
         public static BuildingMeshData Build(CityModel model)
         {
+            return Build(model, clip: false, default);
+        }
+
+        /// <summary>
+        /// Drops buildings whose AABB lies wholly outside the grid rectangle (ADR-004 §4).
+        /// A building that only touches the edge stays.
+        /// </summary>
+        public static BuildingMeshData Build(CityModel model, CityGrid grid)
+        {
+            return Build(model, clip: true, grid);
+        }
+
+        static BuildingMeshData Build(CityModel model, bool clip, CityGrid grid)
+        {
             var positions = new List<float>(256);
             var indices = new List<int>(256);
             var colors = new List<uint>(256);
@@ -64,7 +78,14 @@ namespace ZombieCity.City.Core
 
             for (int n = 0; n < buildingSlots; n++)
             {
-                if (AppendBuilding(areas[order[n]], positions, indices, colors, data))
+                Area area = areas[order[n]];
+                if (clip && EntirelyOutside(area, grid))
+                {
+                    data.outsideGrid++;
+                    continue;
+                }
+
+                if (AppendBuilding(area, positions, indices, colors, data))
                 {
                     data.buildingCount++;
                 }
@@ -82,12 +103,33 @@ namespace ZombieCity.City.Core
             return data;
         }
 
-        /// <summary>
-        /// Same as <see cref="Build(CityModel)"/>. Grid clip is filled in after the red tests (ADR-004 §4).
-        /// </summary>
-        public static BuildingMeshData Build(CityModel model, CityGrid grid)
+        static bool EntirelyOutside(Area area, CityGrid grid)
         {
-            return Build(model);
+            Vec2d[] points = area.points;
+            if (points == null || points.Length == 0)
+            {
+                return false;
+            }
+
+            double minX = points[0].x;
+            double maxX = points[0].x;
+            double minZ = points[0].z;
+            double maxZ = points[0].z;
+            for (int i = 1; i < points.Length; i++)
+            {
+                double x = points[i].x;
+                double z = points[i].z;
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (z < minZ) minZ = z;
+                if (z > maxZ) maxZ = z;
+            }
+
+            double rectMinX = grid.origin.x;
+            double rectMinZ = grid.origin.z;
+            double rectMaxX = rectMinX + (double)grid.w * grid.cell;
+            double rectMaxZ = rectMinZ + (double)grid.h * grid.cell;
+            return maxX < rectMinX || minX > rectMaxX || maxZ < rectMinZ || minZ > rectMaxZ;
         }
 
         static bool AppendBuilding(Area area, List<float> positions, List<int> indices, List<uint> colors, BuildingMeshData data)
