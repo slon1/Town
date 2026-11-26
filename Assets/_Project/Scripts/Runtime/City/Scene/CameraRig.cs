@@ -45,6 +45,18 @@ namespace ZombieCity.City.Scene
             ResetView();
         }
 
+        public CameraRigSettings ActiveSettings => _settings;
+
+        public void SetViewFrame(float focusWorldX, float focusWorldZ, float orthographicSize)
+        {
+            if (_settings == null) return;
+            _focusXZ.x = focusWorldX;
+            _focusXZ.y = focusWorldZ;
+            _camera.orthographicSize = Mathf.Clamp(orthographicSize, _settings.minOrthoSize, _maxOrthoSize > 0.01f ? _maxOrthoSize : orthographicSize);
+            ClampFocusToBounds();
+            ApplyTransform();
+        }
+
         public void ResetView()
         {
             if (_map == null || _settings == null) return;

@@ -16,6 +16,11 @@ namespace ZombieCity.City.EditorTools
     const string PrefabPath = "Assets/_Project/UI/CityMapLayerPanel.prefab";
     const float RowHeight = 96f;
     const float PanelWidth = 420f;
+    static readonly Color PanelBackdrop = new Color32(32, 32, 32, 230);
+    static readonly Color ButtonFill = new Color32(42, 42, 42, 242);
+    static readonly Color ToggleOff = new Color32(55, 55, 55, 242);
+    static readonly Color ToggleOn = new Color32(70, 200, 120, 255);
+    static readonly Color LabelOnPanel = new Color32(235, 235, 235, 255);
 
     [MenuItem("City/Build Map Layer Panel Prefab")]
     public static void BuildPrefabMenu() => BuildPrefab();
@@ -39,7 +44,7 @@ namespace ZombieCity.City.EditorTools
         canvas = canvasGo.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = cam;
-        canvas.planeDistance = 10f;
+        ApplyCanvasPlaneDistance(canvas, cam);
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -52,6 +57,7 @@ namespace ZombieCity.City.EditorTools
       {
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = cam;
+        ApplyCanvasPlaneDistance(canvas, cam);
         var scaler = canvas.GetComponent<CanvasScaler>();
         if (scaler != null)
         {
@@ -129,6 +135,9 @@ namespace ZombieCity.City.EditorTools
 
       var expanded = CreateChild(root.transform, "Expanded");
       Stretch(expanded, Vector2.zero, Vector2.zero);
+      var expandedBg = expanded.gameObject.AddComponent<Image>();
+      expandedBg.color = PanelBackdrop;
+      expandedBg.raycastTarget = false;
       var vlg = expanded.gameObject.AddComponent<VerticalLayoutGroup>();
       vlg.childAlignment = TextAnchor.UpperLeft;
       vlg.spacing = 8f;
@@ -149,7 +158,7 @@ namespace ZombieCity.City.EditorTools
       Toggle oCrosswalk = CreateOverlayToggle(expanded, "Crosswalk");
       Toggle oGate = CreateOverlayToggle(expanded, "Gate / passage");
       Toggle oBridge = CreateOverlayToggle(expanded, "Bridge");
-      Toggle tBuildings = CreateOverlayToggle(expanded, "Здания");
+      Toggle tBuildings = CreateOverlayToggle(expanded, "Buildings");
       CreateButton(expanded, "ResetCamera", "Reset camera", out Button resetBtn);
 
       var collapsed = CreateChild(root.transform, "CollapsedChip");
@@ -157,6 +166,9 @@ namespace ZombieCity.City.EditorTools
       collapsed.anchorMax = new Vector2(0f, 1f);
       collapsed.pivot = new Vector2(0f, 1f);
       collapsed.sizeDelta = new Vector2(120f, RowHeight);
+      var chipBg = collapsed.gameObject.AddComponent<Image>();
+      chipBg.color = PanelBackdrop;
+      chipBg.raycastTarget = false;
       CreateButton(collapsed, "Expand", "=", out Button expandBtn);
       collapsed.gameObject.SetActive(false);
 
@@ -224,7 +236,7 @@ namespace ZombieCity.City.EditorTools
       toggleGo.GetComponent<RectTransform>().sizeDelta = new Vector2(48f, 48f);
       var toggle = toggleGo.GetComponent<Toggle>();
       var toggleImage = toggleGo.GetComponent<Image>();
-      toggleImage.color = new Color(1f, 1f, 1f, 0.25f);
+      toggleImage.color = ToggleOff;
       toggle.targetGraphic = toggleImage;
 
       var check = new GameObject("Check", typeof(RectTransform), typeof(Image));
@@ -235,14 +247,16 @@ namespace ZombieCity.City.EditorTools
       checkRect.offsetMin = new Vector2(8, 8);
       checkRect.offsetMax = new Vector2(-8, -8);
       var checkImg = check.GetComponent<Image>();
-      checkImg.color = new Color(0.85f, 0.9f, 1f, 1f);
+      checkImg.color = ToggleOn;
       toggle.graphic = checkImg;
+      toggle.transition = Selectable.Transition.ColorTint;
 
       var textGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
       textGo.transform.SetParent(row, false);
       var text = textGo.GetComponent<TextMeshProUGUI>();
       text.text = label;
       text.fontSize = 32;
+      text.color = LabelOnPanel;
       text.alignment = TextAlignmentOptions.MidlineLeft;
       textGo.AddComponent<LayoutElement>().flexibleWidth = 1f;
       return toggle;
@@ -256,7 +270,7 @@ namespace ZombieCity.City.EditorTools
       go.transform.SetParent(row, false);
       Stretch(go.GetComponent<RectTransform>(), Vector2.zero, Vector2.zero);
       var img = go.GetComponent<Image>();
-      img.color = new Color(1f, 1f, 1f, 0.2f);
+      img.color = ButtonFill;
       button = go.GetComponent<Button>();
       button.targetGraphic = img;
 
@@ -266,7 +280,30 @@ namespace ZombieCity.City.EditorTools
       var text = textGo.GetComponent<TextMeshProUGUI>();
       text.text = caption;
       text.fontSize = 30;
+      text.color = LabelOnPanel;
       text.alignment = TextAlignmentOptions.Center;
+    }
+
+    public static void ApplyCanvasPlaneDistance(Canvas canvas, Camera cam)
+    {
+      if (canvas == null || cam == null) return;
+      canvas.planeDistance = cam.nearClipPlane + 0.5f;
+    }
+
+    [MenuItem("City/Apply UI Canvas Plane Distance (TASK-010)")]
+    public static void ApplySceneCanvasPlaneDistance()
+    {
+      var cam = Camera.main;
+      var canvas = Object.FindAnyObjectByType<Canvas>();
+      if (cam == null || canvas == null)
+      {
+        Debug.LogError("[City] No Main Camera or Canvas in scene.");
+        return;
+      }
+
+      ApplyCanvasPlaneDistance(canvas, cam);
+      EditorSceneManager.MarkSceneDirty(canvas.gameObject.scene);
+      Debug.Log("[City] Canvas planeDistance = " + canvas.planeDistance);
     }
   }
 }

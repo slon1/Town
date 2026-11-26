@@ -34,6 +34,23 @@
 | `task007_camera_pitch_90.png` | камера pitch 90° (`CameraRigSettings`) |
 | `task007_camera_pitch_60.png` | камера pitch 60° (`CameraRigSettings`) |
 | `panel_buildings_toggle.png` | BuildingId, здания скрыты (`IBuildingsView.Visible = false`), панель развёрнута |
+| `task007_panel_sync_flags.png` | Flags + Crosswalk, Buildings off |
+| `task007_camera_pitch_60_zoom.png` | pitch 60°, центр (88, 49), ortho 25 |
+| `task010_ui_diagnosis.png` | диагностика 10A: здание под панелью (pan −72, 58) |
+
+## Исправления (TASK-010)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **10A** | крыша под текстом UI, полупрозрачные кнопки | `Canvas.planeDistance = near+0,5` (**0,8**); подложка панели **#202020** α≈0,9; непрозрачные кнопки/тоглы | UI читается на кадрах с зданием под панелью (`task010_ui_diagnosis.png`); overlay-камера не понадобилась |
+| **10B** | рассинхрон панели при программной смене | `OnEnable`/`OnDisable` + `Changed`; съёмка через `ILayerView`/`IBuildingsView` | `task007_panel_sync_flags.png`: Flags + Crosswalk on, Buildings off |
+| **10C** | pitch 60° = 90° на скринах | pitch на `CameraRig.ActiveSettings`; `SetViewFrame(88, 49, 25)` | SHA256: 90°=`11c5d3c65f27`, 60°=`6cc437a2508e`; zoom `task007_camera_pitch_60_zoom.png`; euler.x≈60° в Play |
+| **10D** | «Здания», тусклые тоглы | prefab «Buildings», контраст check/on | пересборка prefab |
+| **10E** | старые кадры | все PNG 1080×2160 (`capture_game_view`); GC bench 600 кадров | **145/145** EditMode; GC: **nonZero=0**, total=0, max=0 B (`City/Run GC bench`) |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-010)`, `City/Apply UI Canvas Plane Distance (TASK-010)`.
 
 ## Файлы (новые / существенные)
 
@@ -67,7 +84,7 @@
 
 - `CameraRig.Update` и `CityMapLayerPanel`: без LINQ, без `new List`/массивов в цикле; поля кэшируются, pinch обходит `touches` без аллокаций.
 - `CityMapPanelSafeArea.Update` только сравнивает `safeArea` / размер экрана.
-- Deep Profiler в 007 не гонялся; ожидаем 0 B managed GC в кадре на pan/zoom/кликах UI (кроме первого кадра Unity UI). Для приёмки архитектору — при необходимости Deep Profile 10 с панорамы в Play Mode.
+- **TASK-010:** `CityReport007GcBench` — 600 кадров, пан/зум через `SetViewFrame`, смена слоёв/оверлеев: **0 B** `GC.Allocated In Frame` (nonZero=0).
 
 ## Отклонения от ТЗ и почему
 

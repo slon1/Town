@@ -32,6 +32,7 @@ namespace ZombieCity.City.UI
         IBuildingsView _buildings;
         ICameraRig _cameraRig;
         bool _syncing;
+        bool _wired;
 
         [Inject]
         public void Construct(ILayerView layers, IBuildingsView buildings, ICameraRig cameraRig)
@@ -41,9 +42,28 @@ namespace ZombieCity.City.UI
             _cameraRig = cameraRig;
         }
 
+        void OnEnable()
+        {
+            if (_layers != null)
+            {
+                _layers.Changed += SyncFromModel;
+            }
+
+            if (_buildings != null)
+            {
+                _buildings.Changed += SyncBuildingsToggle;
+            }
+
+            if (_wired)
+            {
+                SyncFromModel();
+                SyncBuildingsToggle();
+            }
+        }
+
         void Start()
         {
-            if (_layers == null) return;
+            if (_layers == null || _wired) return;
             WireLayer(toggleAccess, CityLayer.Access);
             WireLayer(toggleFlags, CityLayer.Flags);
             WireLayer(toggleBuildingId, CityLayer.BuildingId);
@@ -66,17 +86,12 @@ namespace ZombieCity.City.UI
             resetCameraButton?.onClick.AddListener(() => _cameraRig?.ResetView());
             collapseButton?.onClick.AddListener(ToggleCollapsed);
             expandButton?.onClick.AddListener(ToggleCollapsed);
-            _layers.Changed += SyncFromModel;
-            if (_buildings != null)
-            {
-                _buildings.Changed += SyncBuildingsToggle;
-            }
-
+            _wired = true;
             SyncFromModel();
             SyncBuildingsToggle();
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
             if (_layers != null) _layers.Changed -= SyncFromModel;
             if (_buildings != null) _buildings.Changed -= SyncBuildingsToggle;
