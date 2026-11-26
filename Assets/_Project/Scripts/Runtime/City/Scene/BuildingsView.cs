@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,16 +11,54 @@ namespace ZombieCity.City.Scene
 {
     /// <summary>One building mesh, built once at startup (ADR-004 §4).</summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public sealed class BuildingsView : MonoBehaviour
+    public sealed class BuildingsView : MonoBehaviour, IBuildingsView
     {
         [SerializeField] Material material;
 
         CityModelAsset _model;
+        CityBakeAsset _bake;
+        bool _visible = true;
+
+        public bool Visible
+        {
+            get => _visible;
+            set
+            {
+                if (_visible == value)
+                {
+                    return;
+                }
+
+                _visible = value;
+                MeshRenderer renderer = GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    renderer.enabled = value;
+                }
+
+                Changed?.Invoke();
+            }
+        }
+
+        public event Action Changed;
 
         [Inject]
-        public void Construct(CityModelAsset model)
+        public void Construct(CityModelAsset model, CityBakeAsset bake)
         {
             _model = model;
+            _bake = bake;
+        }
+
+        [ContextMenu("Buildings/Show")]
+        void ShowBuildings()
+        {
+            Visible = true;
+        }
+
+        [ContextMenu("Buildings/Hide")]
+        void HideBuildings()
+        {
+            Visible = false;
         }
 
         void Start()
@@ -31,7 +70,9 @@ namespace ZombieCity.City.Scene
             }
 
             var watch = Stopwatch.StartNew();
-            BuildingMeshData data = BuildingMeshBuilder.Build(_model.model);
+            BuildingMeshData data = _bake != null
+                ? BuildingMeshBuilder.Build(_model.model, _bake.Grid)
+                : BuildingMeshBuilder.Build(_model.model);
             watch.Stop();
 
             int count = data.vertexCount;
@@ -64,6 +105,7 @@ namespace ZombieCity.City.Scene
                 "[City] buildings " + data.buildingCount
                 + " skipped " + data.skippedBuildings
                 + " rings " + data.skippedRings
+                + " outsideGrid " + data.outsideGrid
                 + " verts " + data.vertexCount
                 + " tris " + data.triangleCount
                 + " ms " + watch.Elapsed.TotalMilliseconds.ToString("0.0"));

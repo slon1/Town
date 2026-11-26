@@ -10,6 +10,7 @@ namespace ZombieCity.City.Scene
         [SerializeField] CityBakeAsset bake;
         [SerializeField] CityModelAsset model;
         [SerializeField] GroundView ground;
+        [SerializeField] BuildingsView buildings;
 
         public override void InstallBindings()
         {
@@ -17,6 +18,7 @@ namespace ZombieCity.City.Scene
             Container.Bind<CityModelAsset>().FromInstance(model).AsSingle();
             Container.Bind<ICityMap>().FromInstance(bake).AsSingle();
             Container.Bind<ILayerView>().FromInstance(ground).AsSingle();
+            Container.Bind<IBuildingsView>().FromInstance(buildings).AsSingle();
         }
     }
 }
