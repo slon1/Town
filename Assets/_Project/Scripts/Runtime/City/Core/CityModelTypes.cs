@@ -58,6 +58,7 @@ namespace ZombieCity.City.Core
         public AreaKind kind;
         public float heightM;
         public float minHeightM;
+        public HeightSource heightSource;
         public string buildingType;
         public Vec2d[] points;
         public int[] ringStart;

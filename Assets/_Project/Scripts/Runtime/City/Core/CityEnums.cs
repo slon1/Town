@@ -77,4 +77,12 @@ namespace ZombieCity.City.Core
         Both = 3,
         Unknown = 4
     }
+
+    /// <summary>Откуда взята высота здания. ADR-001 v1.4, канонические байты — int32 после minHeightM.</summary>
+    public enum HeightSource
+    {
+        HeightTag = 0,
+        Levels = 1,
+        Default = 2
+    }
 }
