@@ -27,6 +27,7 @@ Shader "ZombieCity/City/BuildingsVertexColor"
             #pragma multi_compile_instancing
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -61,7 +62,9 @@ Shader "ZombieCity/City/BuildingsVertexColor"
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                return half4(input.color.rgb, 1) * _BaseColor;
+                // Mesh stores Color32 as sRGB. Convert here so 8-bit rounding is not baked into the vertex buffer (ADR-004 §4).
+                half3 rgb = SRGBToLinear(input.color.rgb);
+                return half4(rgb, 1) * _BaseColor;
             }
             ENDHLSL
         }

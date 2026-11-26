@@ -102,7 +102,8 @@ namespace ZombieCity.City.Scene
                     Destroy(_texture);
                 }
 
-                _texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true)
+                // linear: false — sRGB texture so palette hex matches the Game view (ADR-004 §3).
+                _texture = new Texture2D(w, h, TextureFormat.RGBA32, false, false)
                 {
                     filterMode = FilterMode.Point,
                     wrapMode = TextureWrapMode.Clamp,
