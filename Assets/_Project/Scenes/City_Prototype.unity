@@ -1311,6 +1311,7 @@ MonoBehaviour:
   bake: {fileID: 11400000, guid: 3ac4f13372f44ac4d96d5df8e7fb37ae, type: 2}
   model: {fileID: 11400000, guid: 7f27137bfb5457a4ca11f845374ff4af, type: 2}
   ground: {fileID: 1511139784}
+  buildings: {fileID: 695130694}
 --- !u!114 &1469913435
 MonoBehaviour:
   m_ObjectHideFlags: 0
