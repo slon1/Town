@@ -16,6 +16,7 @@ namespace ZombieCity.City.Core
         public int buildingCount;
         public int skippedBuildings;
         public int skippedRings;
+        public int outsideGrid;
         public int vertexCount;
         public int triangleCount;
     }
@@ -79,6 +80,14 @@ namespace ZombieCity.City.Core
             data.vertexCount = colors.Count;
             data.triangleCount = indices.Count / 3;
             return data;
+        }
+
+        /// <summary>
+        /// Same as <see cref="Build(CityModel)"/>. Grid clip is filled in after the red tests (ADR-004 §4).
+        /// </summary>
+        public static BuildingMeshData Build(CityModel model, CityGrid grid)
+        {
+            return Build(model);
         }
 
         static bool AppendBuilding(Area area, List<float> positions, List<int> indices, List<uint> colors, BuildingMeshData data)
