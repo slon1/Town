@@ -37,15 +37,17 @@ namespace ZombieCity.City.EditorTools
     static CityMapLayerPanel _panel;
     static CameraRig _rig;
     static Image _resetImage;
-    static Color _savedResetColor;
-    static bool _diagnosisDone;
+    static DiagnosisResetScope _diagnosisHighlight;
 
+    static readonly Color ResetButtonFill =
+      new Color(0.16470589f, 0.16470589f, 0.16470589f, 0.9490196f);
+
+    [MenuItem("City/Capture REPORT-007 Screenshots (TASK-012)")]
     [MenuItem("City/Capture REPORT-007 Screenshots (TASK-011)")]
     [MenuItem("City/Capture REPORT-007 Screenshots (TASK-010)")]
     public static void StartCapture()
     {
       EnsureOutputDir();
-      _diagnosisDone = false;
       if (!EditorApplication.isPlaying)
       {
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -103,7 +105,6 @@ namespace ZombieCity.City.EditorTools
     static void BeginSequence()
     {
       EditorApplication.update -= Tick;
-      _diagnosisDone = false;
       _frameCounter = 0;
       _step = 0;
       if (!ResolveScene())
@@ -112,6 +113,7 @@ namespace ZombieCity.City.EditorTools
         return;
       }
 
+      RestoreResetButtonColor();
       Screen.SetResolution(1080, 2160, false);
       EditorApplication.update += Tick;
     }
@@ -140,15 +142,6 @@ namespace ZombieCity.City.EditorTools
       }
 
       _frameCounter++;
-
-      if (!_diagnosisDone)
-      {
-        if (_frameCounter < 40) return;
-        RunDiagnosisShot();
-        _diagnosisDone = true;
-        _frameCounter = 0;
-        return;
-      }
 
       switch (_step)
       {
@@ -184,7 +177,7 @@ namespace ZombieCity.City.EditorTools
           SaveCapture("task007_layer_flags.png");
           _layers.SetLayer(CityLayer.BuildingId);
           _layers.SetOverlay(CityOverlay.Crosswalk, false);
-          if (_buildings != null) _buildings.Visible = true;
+          if (_buildings != null) _buildings.Visible = false;
           _frameCounter = 0;
           _step = 4;
           return;
@@ -232,10 +225,24 @@ namespace ZombieCity.City.EditorTools
           if (_frameCounter < 20) return;
           _rig?.LogCaptureState("pitch_60_zoom");
           SaveCapture("task007_camera_pitch_60_zoom.png");
+          _frameCounter = 0;
+          _step = 10;
+          return;
+        case 10:
+          if (_frameCounter < 20) return;
+          ApplyDiagnosisView();
+          BeginDiagnosisResetHighlight();
+          SaveCapture("task010_ui_diagnosis.png");
+          _frameCounter = 0;
+          _step = 11;
+          return;
+        case 11:
+          if (_frameCounter < 5) return;
+          EndDiagnosisResetHighlight();
           SetPitch(90f);
           _rig.ResetView();
           LogPitchHashes();
-          Debug.Log("[City] TASK-011 screenshot sequence done.");
+          Debug.Log("[City] TASK-012 screenshot sequence done.");
           EditorApplication.update -= Tick;
           EditorApplication.isPlaying = false;
           break;
@@ -250,22 +257,71 @@ namespace ZombieCity.City.EditorTools
       _layers.SetLayer(CityLayer.Access);
       SetOverlaysCrosswalkOnly(false);
       _rig.SetViewFrame(DiagnosisX, DiagnosisZ, DiagnosisOrtho, RefAspect);
-      CacheResetButton();
-      if (_resetImage != null)
-      {
-        _savedResetColor = _resetImage.color;
-        _resetImage.color = new Color(1f, 0.1f, 0.85f, 1f);
-      }
-
       _rig.LogCaptureState("ui_diagnosis");
     }
 
     static void RunDiagnosisShot()
     {
       ApplyDiagnosisView();
-      SaveCapture("task010_ui_diagnosis.png");
-      if (_resetImage != null) _resetImage.color = _savedResetColor;
-      Debug.Log("[City] UI diagnosis frame saved (opaque reset, building under panel).");
+      try
+      {
+        BeginDiagnosisResetHighlight();
+        SaveCapture("task010_ui_diagnosis.png");
+      }
+      finally
+      {
+        EndDiagnosisResetHighlight();
+      }
+
+      Debug.Log("[City] UI diagnosis frame saved (magenta reset restored after capture).");
+    }
+
+    public static void BeginDiagnosisResetHighlight()
+    {
+      EndDiagnosisResetHighlight();
+      CacheResetButton();
+      _diagnosisHighlight = new DiagnosisResetScope(_resetImage);
+    }
+
+    public static void EndDiagnosisResetHighlight()
+    {
+      _diagnosisHighlight?.Dispose();
+      _diagnosisHighlight = null;
+      RestoreResetButtonColor();
+    }
+
+    static void RestoreResetButtonColor()
+    {
+      CacheResetButton();
+      if (_resetImage != null) _resetImage.color = ResetButtonFill;
+    }
+
+    sealed class DiagnosisResetScope : IDisposable
+    {
+      static readonly Color Diagnostic = new Color(1f, 0.1f, 0.85f, 1f);
+      readonly Image _image;
+      readonly Color _previous;
+      readonly bool _active;
+
+      public DiagnosisResetScope(Image image)
+      {
+        _image = image;
+        if (_image == null)
+        {
+          _active = false;
+          return;
+        }
+
+        _previous = _image.color;
+        _image.color = Diagnostic;
+        _active = true;
+      }
+
+      public void Dispose()
+      {
+        if (!_active || _image == null) return;
+        _image.color = _previous;
+      }
     }
 
     static void ApplySyncFlagsView()
@@ -398,7 +454,8 @@ namespace ZombieCity.City.EditorTools
           break;
         case 3:
           _layers.SetLayer(CityLayer.BuildingId);
-          _layers.SetOverlay(CityOverlay.Crosswalk, false);
+          SetOverlaysCrosswalkOnly(false);
+          if (_buildings != null) _buildings.Visible = false;
           break;
         case 4:
           SetPitch(90f);

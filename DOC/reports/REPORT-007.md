@@ -81,6 +81,33 @@
 | `task007_camera_pitch_60_zoom.png` | Access | off | on | (120, 14) | 20 | 60° | `pitch_60_zoom_setup focus=(120,14) ortho=20 pitch=60` |
 | `task010_ui_diagnosis.png` | Access | off | on | (-48, 62) | 22 | 90° | `ui_diagnosis focus=(-48,62) ortho=22 pitch=90` |
 
+## Исправления (TASK-012)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **12A** | magenta «Reset camera» на всех кадрах | Причина: `ApplyDiagnosisView` красил кнопку без гарантированного сброса; диагностика шла **первой** в цепочке. `DiagnosisResetScope` + `Begin/EndDiagnosisResetHighlight`, `try/finally` и отдельный шаг **11** после `SaveCapture`; `RestoreResetButtonColor()` при старте; диагностика — **последний** кадр | В prefab/scene YAML нет `1,0.1,0.85` (поиск по `CityMapLayerPanel.prefab`, сцена — без magenta); штатный fill `{r:0.1647,g:0.1647,b:0.1647,a:0.949}` |
+| **12B** | смешанный комплект; `layer_building_id` с крышами | Пересъёмка 10× **1080×2160** (`capture game_view` + `ApplyReport007State`); BuildingId **Buildings off** (шаг 3 / state 3); zoom — `source=camera` | SHA256: 90°=`11484d72ca5c`, 60°=`31eb8bbe2351`, zoom=`d2794aa9791f`; magenta только `task010_ui_diagnosis.png` |
+| **12C** | — | Раздел TASK-012, коммит, push | EditMode **145/145**; запрещённые файлы без diff |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-012)` (диагностика в конце, шаги 10–11).
+
+### Состояние кадров (TASK-012, актуальный комплект)
+
+| Файл | Слой | Оверлеи | Buildings | focus | ortho | pitch |
+|------|------|---------|-----------|-------|-------|-------|
+| `task007_panel_access_crosswalk.png` | Access | Crosswalk | on | map center | start | 90° |
+| `task007_panel_collapsed.png` | Access | Crosswalk | on | — | — | — |
+| `task007_layer_flags.png` | Flags | off | on | — | — | — |
+| `task007_layer_building_id.png` | BuildingId | off | **off** | — | — | — |
+| `task007_panel_sync_flags.png` | Flags | Crosswalk | off | (88, 49) | 25 | 90° |
+| `panel_buildings_toggle.png` | BuildingId | off | off | — | — | — |
+| `task007_camera_pitch_90.png` | — | — | — | center | start | 90° |
+| `task007_camera_pitch_60.png` | — | — | — | center | start | 60° |
+| `task007_camera_pitch_60_zoom.png` | Access | off | on | (120, 14) | 20 | 60° |
+| `task010_ui_diagnosis.png` | Access | off | on | (-48, 62) | 22 | 90° (Reset magenta **только здесь**) |
+
 ## Файлы (новые / существенные)
 
 **Runtime:** `Scene/ICameraRig.cs`, `CameraRig.cs`, `CameraRigSettings.cs`, `CameraUiInstaller.cs`; `UI/CityMapLayerPanel.cs`, `CityMapPanelSafeArea.cs`.
