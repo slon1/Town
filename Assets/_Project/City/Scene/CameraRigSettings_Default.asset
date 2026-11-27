@@ -15,7 +15,8 @@ MonoBehaviour:
   pitchDegrees: 90
   minOrthoSize: 15
   panMargin: 20
-  zoomSpeedWheel: 0.1
+  zoomPerNotch: 0.15
+  scrollNotchUnit: 120
   panSensitivity: 1
   pinchSensitivity: 1
   cameraDistance: 300
