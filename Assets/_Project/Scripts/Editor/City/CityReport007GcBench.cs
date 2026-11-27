@@ -90,7 +90,7 @@ namespace ZombieCity.City.EditorTools
       {
         float x = Mathf.Sin(t) * 40f;
         float z = Mathf.Cos(t * 0.7f) * 40f;
-        _rig.SetViewFrame(x, z, 40f + Mathf.Sin(t * 0.2f) * 5f);
+        _rig.SetViewFrame(x, z, 40f + Mathf.Sin(t * 0.2f) * 5f, 0f);
       }
 
       if (_layers != null && (_frame % 90) == 0)

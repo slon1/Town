@@ -52,6 +52,35 @@
 
 Меню: `City/Capture REPORT-007 Screenshots (TASK-010)`, `City/Apply UI Canvas Plane Distance (TASK-010)`.
 
+## Исправления (TASK-011)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **11A** | `SetViewFrame` без учёта portrait-aspect; нет лога кадра | `referenceAspect = 1080/2160` в `SetViewFrame`; `LogCaptureState`; `EnsureViewLimits` при раннем вызове; меню съёмки ждёт кадры до `SaveCapture` | focus/ortho/pitch в логе совпадают с пресетом (см. строки ниже) |
+| **11B** | нет Crosswalk на карте, неверный центр/масштаб | `ApplySyncFlagsView`: Flags + только Crosswalk, Buildings off, `(88,49,25)`, pitch 90° | `task007_panel_sync_flags.png` 1080×2160 (`capture_game_view`) |
+| **11C** | чёрный `pitch_60_zoom` | `ApplyPitch60ZoomView`: Access, Buildings on, без оверлеев, `(120,14,20)`, pitch 60°; zoom кадр — `capture_game_view` **source=camera** | SHA256: 90°=`20dcc8d5050b`, 60°=`e1e433b6516d`, zoom=`dc68619ffe9b` (различаются) |
+| **11D** | подложка α≈0,75; диагностика без здания под панелью | prefab подложка **α=242** (~0,95); диагностика `(-48,62,22)`, здания on, Reset **magenta** opaque | `task010_ui_diagnosis.png`; **перекрытия по глубине нет** (overlay UI поверх карты, planeDistance 0,8) |
+| **11E** | неполный/устаревший комплект | 10 PNG в `DOC/reports/img/`; таблица состояний; меню **TASK-011** | EditMode **145/145** |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-011)` (авто-цепочка + `SessionState` после domain reload). Для архитектора: приоритетный способ — `ApplyReport007State(n)` в Play + пауза ≥3 с + **`capture_game_view` 1080×2160** (как в 11E).
+
+### Состояние кадров (TASK-011)
+
+| Файл | Слой | Оверлеи | Buildings | focus (x,z) | ortho | pitch | Лог / примечание |
+|------|------|---------|-----------|---------------|-------|-------|------------------|
+| `task007_panel_access_crosswalk.png` | Access | Crosswalk | on | map center | start | 90° | развёрнутая панель |
+| `task007_panel_collapsed.png` | Access | Crosswalk | on | — | — | — | свёрнута |
+| `task007_layer_flags.png` | Flags | off | on | — | — | — | развёрнута |
+| `task007_layer_building_id.png` | BuildingId | off | on | — | — | — | |
+| `task007_panel_sync_flags.png` | Flags | Crosswalk | off | (88, 49) | 25 | 90° | `capture panel_sync_flags focus=(88,49) ortho=25 pitch=90 aspect=0,5` |
+| `panel_buildings_toggle.png` | BuildingId | off | off | — | — | — | |
+| `task007_camera_pitch_90.png` | — | — | — | center | start | 90° | full map |
+| `task007_camera_pitch_60.png` | — | — | — | center | start | 60° | full map |
+| `task007_camera_pitch_60_zoom.png` | Access | off | on | (120, 14) | 20 | 60° | `pitch_60_zoom_setup focus=(120,14) ortho=20 pitch=60` |
+| `task010_ui_diagnosis.png` | Access | off | on | (-48, 62) | 22 | 90° | `ui_diagnosis focus=(-48,62) ortho=22 pitch=90` |
+
 ## Файлы (новые / существенные)
 
 **Runtime:** `Scene/ICameraRig.cs`, `CameraRig.cs`, `CameraRigSettings.cs`, `CameraUiInstaller.cs`; `UI/CityMapLayerPanel.cs`, `CityMapPanelSafeArea.cs`.

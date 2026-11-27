@@ -17,9 +17,17 @@ namespace ZombieCity.City.EditorTools
   {
     const string ScenePath = "Assets/_Project/Scenes/City_Prototype.unity";
     const string OutputDir = "DOC/reports/img";
-    const float ZoomPitchCenterX = 88f;
-    const float ZoomPitchCenterZ = 49f;
-    const float ZoomOrthoSize = 25f;
+    const float RefAspect = 1080f / 2160f;
+    const float SyncX = 88f;
+    const float SyncZ = 49f;
+    const float SyncOrtho = 25f;
+    const float Zoom60X = 120f;
+    const float Zoom60Z = 14f;
+    const float Zoom60Ortho = 20f;
+    const float DiagnosisX = -48f;
+    const float DiagnosisZ = 62f;
+    const float DiagnosisOrtho = 22f;
+    const string PendingCaptureSessionKey = "City.Report007.PendingCapture";
 
     static bool _pendingPlay;
     static int _step;
@@ -32,6 +40,7 @@ namespace ZombieCity.City.EditorTools
     static Color _savedResetColor;
     static bool _diagnosisDone;
 
+    [MenuItem("City/Capture REPORT-007 Screenshots (TASK-011)")]
     [MenuItem("City/Capture REPORT-007 Screenshots (TASK-010)")]
     public static void StartCapture()
     {
@@ -41,6 +50,7 @@ namespace ZombieCity.City.EditorTools
       {
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         _pendingPlay = true;
+        SessionState.SetBool(PendingCaptureSessionKey, true);
         _step = 0;
         EditorApplication.playModeStateChanged += OnPlayMode;
         EditorApplication.isPlaying = true;
@@ -68,21 +78,41 @@ namespace ZombieCity.City.EditorTools
 
     static void OnPlayMode(PlayModeStateChange change)
     {
-      if (!_pendingPlay || change != PlayModeStateChange.EnteredPlayMode) return;
+      if (change != PlayModeStateChange.EnteredPlayMode) return;
+      var pending = _pendingPlay || SessionState.GetBool(PendingCaptureSessionKey, false);
+      if (!pending) return;
       _pendingPlay = false;
+      SessionState.EraseBool(PendingCaptureSessionKey);
       EditorApplication.playModeStateChanged -= OnPlayMode;
       BeginSequence();
     }
 
+    [InitializeOnLoadMethod]
+    static void ResumeCaptureAfterReload()
+    {
+      if (!SessionState.GetBool(PendingCaptureSessionKey, false) || !EditorApplication.isPlaying) return;
+      EditorApplication.delayCall += () =>
+      {
+        if (!EditorApplication.isPlaying) return;
+        SessionState.EraseBool(PendingCaptureSessionKey);
+        _pendingPlay = false;
+        BeginSequence();
+      };
+    }
+
     static void BeginSequence()
     {
+      EditorApplication.update -= Tick;
+      _diagnosisDone = false;
       _frameCounter = 0;
+      _step = 0;
       if (!ResolveScene())
       {
         EditorApplication.isPlaying = false;
         return;
       }
 
+      Screen.SetResolution(1080, 2160, false);
       EditorApplication.update += Tick;
     }
 
@@ -161,14 +191,13 @@ namespace ZombieCity.City.EditorTools
         case 4:
           if (_frameCounter < 15) return;
           SaveCapture("task007_layer_building_id.png");
-          _layers.SetLayer(CityLayer.Flags);
-          _layers.SetOverlay(CityOverlay.Crosswalk, true);
-          if (_buildings != null) _buildings.Visible = false;
+          ApplySyncFlagsView();
           _frameCounter = 0;
           _step = 5;
           return;
         case 5:
-          if (_frameCounter < 15) return;
+          if (_frameCounter < 20) return;
+          _rig?.LogCaptureState("panel_sync_flags");
           SaveCapture("task007_panel_sync_flags.png");
           _layers.SetLayer(CityLayer.BuildingId);
           _layers.SetOverlay(CityOverlay.Crosswalk, false);
@@ -195,32 +224,32 @@ namespace ZombieCity.City.EditorTools
         case 8:
           if (_frameCounter < 18) return;
           SaveCapture("task007_camera_pitch_60.png");
-          SetPitch(60f);
-          _rig.SetViewFrame(ZoomPitchCenterX, ZoomPitchCenterZ, ZoomOrthoSize);
+          ApplyPitch60ZoomView();
           _frameCounter = 0;
           _step = 9;
           return;
         case 9:
-          if (_frameCounter < 18) return;
+          if (_frameCounter < 20) return;
+          _rig?.LogCaptureState("pitch_60_zoom");
           SaveCapture("task007_camera_pitch_60_zoom.png");
           SetPitch(90f);
           _rig.ResetView();
           LogPitchHashes();
-          Debug.Log("[City] TASK-010 screenshot sequence done.");
+          Debug.Log("[City] TASK-011 screenshot sequence done.");
           EditorApplication.update -= Tick;
           EditorApplication.isPlaying = false;
           break;
       }
     }
 
-    static void RunDiagnosisShot()
+    static void ApplyDiagnosisView()
     {
       SetExpanded(true);
-      _layers.SetLayer(CityLayer.Access);
-      _layers.SetOverlay(CityOverlay.Crosswalk, false);
-      if (_buildings != null) _buildings.Visible = true;
-      _rig.SetViewFrame(-72f, 58f, 38f);
       SetPitch(90f);
+      if (_buildings != null) _buildings.Visible = true;
+      _layers.SetLayer(CityLayer.Access);
+      SetOverlaysCrosswalkOnly(false);
+      _rig.SetViewFrame(DiagnosisX, DiagnosisZ, DiagnosisOrtho, RefAspect);
       CacheResetButton();
       if (_resetImage != null)
       {
@@ -228,9 +257,46 @@ namespace ZombieCity.City.EditorTools
         _resetImage.color = new Color(1f, 0.1f, 0.85f, 1f);
       }
 
+      _rig.LogCaptureState("ui_diagnosis");
+    }
+
+    static void RunDiagnosisShot()
+    {
+      ApplyDiagnosisView();
       SaveCapture("task010_ui_diagnosis.png");
       if (_resetImage != null) _resetImage.color = _savedResetColor;
-      Debug.Log("[City] UI diagnosis frame saved.");
+      Debug.Log("[City] UI diagnosis frame saved (opaque reset, building under panel).");
+    }
+
+    static void ApplySyncFlagsView()
+    {
+      SetExpanded(true);
+      SetPitch(90f);
+      if (_buildings != null) _buildings.Visible = false;
+      _layers.SetLayer(CityLayer.Flags);
+      SetOverlaysCrosswalkOnly(true);
+      _rig.SetViewFrame(SyncX, SyncZ, SyncOrtho, RefAspect);
+      _rig.LogCaptureState("panel_sync_flags_setup");
+    }
+
+    static void ApplyPitch60ZoomView()
+    {
+      SetExpanded(true);
+      SetPitch(60f);
+      if (_buildings != null) _buildings.Visible = true;
+      _layers.SetLayer(CityLayer.Access);
+      SetOverlaysCrosswalkOnly(false);
+      _rig.SetViewFrame(Zoom60X, Zoom60Z, Zoom60Ortho, RefAspect);
+      _rig.LogCaptureState("pitch_60_zoom_setup");
+    }
+
+    static void SetOverlaysCrosswalkOnly(bool crosswalkOn)
+    {
+      _layers.SetOverlay(CityOverlay.Crosswalk, crosswalkOn);
+      _layers.SetOverlay(CityOverlay.RailOnRoad, false);
+      _layers.SetOverlay(CityOverlay.UnmarkedCrossing, false);
+      _layers.SetOverlay(CityOverlay.GatePassage, false);
+      _layers.SetOverlay(CityOverlay.Bridge, false);
     }
 
     static void CaptureBuildingsTogglePlay()
@@ -281,6 +347,7 @@ namespace ZombieCity.City.EditorTools
       string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", OutputDir));
       LogSha12(Path.Combine(dir, "task007_camera_pitch_90.png"));
       LogSha12(Path.Combine(dir, "task007_camera_pitch_60.png"));
+      LogSha12(Path.Combine(dir, "task007_camera_pitch_60_zoom.png"));
       if (_rig != null)
       {
         Debug.Log("[City] Camera pitch euler.x = " + _rig.transform.eulerAngles.x);
@@ -314,9 +381,16 @@ namespace ZombieCity.City.EditorTools
       switch (state)
       {
         case 0:
+          _layers.SetLayer(CityLayer.Access);
+          SetOverlaysCrosswalkOnly(true);
+          if (_buildings != null) _buildings.Visible = true;
+          _rig.ResetView();
+          SetPitch(90f);
+          break;
         case 1:
           _layers.SetLayer(CityLayer.Access);
-          _layers.SetOverlay(CityOverlay.Crosswalk, true);
+          SetOverlaysCrosswalkOnly(true);
+          if (_buildings != null) _buildings.Visible = true;
           break;
         case 2:
           _layers.SetLayer(CityLayer.Flags);
@@ -335,12 +409,18 @@ namespace ZombieCity.City.EditorTools
           _rig.ResetView();
           break;
         case 6:
-          SetPitch(60f);
-          _rig.SetViewFrame(ZoomPitchCenterX, ZoomPitchCenterZ, ZoomOrthoSize);
+          ApplyPitch60ZoomView();
           break;
         case 7:
-          _layers.SetLayer(CityLayer.Flags);
-          _layers.SetOverlay(CityOverlay.Crosswalk, true);
+          ApplySyncFlagsView();
+          break;
+        case 8:
+          ApplyDiagnosisView();
+          break;
+        case 9:
+          SetExpanded(true);
+          _layers.SetLayer(CityLayer.BuildingId);
+          SetOverlaysCrosswalkOnly(false);
           if (_buildings != null) _buildings.Visible = false;
           break;
       }

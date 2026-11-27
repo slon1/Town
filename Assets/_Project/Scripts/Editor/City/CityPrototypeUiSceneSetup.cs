@@ -16,7 +16,7 @@ namespace ZombieCity.City.EditorTools
     const string PrefabPath = "Assets/_Project/UI/CityMapLayerPanel.prefab";
     const float RowHeight = 96f;
     const float PanelWidth = 420f;
-    static readonly Color PanelBackdrop = new Color32(32, 32, 32, 230);
+    static readonly Color PanelBackdrop = new Color32(32, 32, 32, 242);
     static readonly Color ButtonFill = new Color32(42, 42, 42, 242);
     static readonly Color ToggleOff = new Color32(55, 55, 55, 242);
     static readonly Color ToggleOn = new Color32(70, 200, 120, 255);

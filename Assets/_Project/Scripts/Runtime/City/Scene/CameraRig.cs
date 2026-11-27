@@ -47,14 +47,48 @@ namespace ZombieCity.City.Scene
 
         public CameraRigSettings ActiveSettings => _settings;
 
-        public void SetViewFrame(float focusWorldX, float focusWorldZ, float orthographicSize)
+        public void SetViewFrame(float focusWorldX, float focusWorldZ, float orthographicSize, float referenceAspect = 0f)
         {
-            if (_settings == null) return;
+            if (_map == null || _settings == null) return;
+            EnsureViewLimits();
             _focusXZ.x = focusWorldX;
             _focusXZ.y = focusWorldZ;
-            _camera.orthographicSize = Mathf.Clamp(orthographicSize, _settings.minOrthoSize, _maxOrthoSize > 0.01f ? _maxOrthoSize : orthographicSize);
+            if (referenceAspect > 0.01f)
+            {
+                _camera.aspect = referenceAspect;
+            }
+
+            float maxOrtho = _maxOrthoSize > orthographicSize ? _maxOrthoSize : orthographicSize;
+            _camera.orthographicSize = Mathf.Clamp(orthographicSize, _settings.minOrthoSize, maxOrtho);
+            ApplyTransform();
             ClampFocusToBounds();
             ApplyTransform();
+        }
+
+        public void LogCaptureState(string tag)
+        {
+            Debug.Log(
+                "[City] capture "
+                + tag
+                + " focus=(" + _focusXZ.x.ToString("0.##") + "," + _focusXZ.y.ToString("0.##") + ")"
+                + " ortho=" + _camera.orthographicSize.ToString("0.##")
+                + " pitch=" + transform.eulerAngles.x.ToString("0.##")
+                + " camPos=(" + transform.position.x.ToString("0.##") + "," + transform.position.y.ToString("0.##") + "," + transform.position.z.ToString("0.##") + ")"
+                + " aspect=" + _camera.aspect.ToString("0.###")
+                + " screen=" + Screen.width + "x" + Screen.height);
+        }
+
+        void EnsureViewLimits()
+        {
+            if (_maxOrthoSize > 1f) return;
+            if (_map == null) return;
+            var grid = _map.Grid;
+            float mapW = grid.w * grid.cell;
+            float mapH = grid.h * grid.cell;
+            float aspect = _camera.aspect > 0.01f ? _camera.aspect : PortraitAspect;
+            _startOrthoSize = mapW / (2f * aspect);
+            float fitHeight = mapH * 0.5f;
+            _maxOrthoSize = _startOrthoSize > fitHeight ? _startOrthoSize : fitHeight;
         }
 
         public void ResetView()
