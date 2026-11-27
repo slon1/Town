@@ -1,0 +1,148 @@
+﻿using System;
+using UnityEngine;
+using UnityEngine.UI;
+using Zenject;
+using ZombieCity.City.Core;
+using ZombieCity.City.Scene;
+
+namespace ZombieCity.City.UI
+{
+    public sealed class CityMapLayerPanel : MonoBehaviour
+    {
+        [Serializable]
+        struct OverlayToggle { public CityOverlay overlay; public Toggle toggle; }
+
+        [SerializeField] Toggle toggleAccess;
+        [SerializeField] Toggle toggleFlags;
+        [SerializeField] Toggle toggleBuildingId;
+        [SerializeField] Toggle toggleBuildings;
+        [SerializeField] ToggleGroup layerGroup;
+        [SerializeField] OverlayToggle overlayRailOnRoad;
+        [SerializeField] OverlayToggle overlayUnmarked;
+        [SerializeField] OverlayToggle overlayCrosswalk;
+        [SerializeField] OverlayToggle overlayGate;
+        [SerializeField] OverlayToggle overlayBridge;
+        [SerializeField] Button resetCameraButton;
+        [SerializeField] Button collapseButton;
+        [SerializeField] Button expandButton;
+        [SerializeField] GameObject expandedContent;
+        [SerializeField] GameObject collapsedChip;
+
+        ILayerView _layers;
+        IBuildingsView _buildings;
+        ICameraRig _cameraRig;
+        bool _syncing;
+        bool _wired;
+
+        [Inject]
+        public void Construct(ILayerView layers, IBuildingsView buildings, ICameraRig cameraRig)
+        {
+            _layers = layers;
+            _buildings = buildings;
+            _cameraRig = cameraRig;
+        }
+
+        void OnEnable()
+        {
+            if (_layers != null)
+            {
+                _layers.Changed += SyncFromModel;
+            }
+
+            if (_buildings != null)
+            {
+                _buildings.Changed += SyncBuildingsToggle;
+            }
+
+            if (_wired)
+            {
+                SyncFromModel();
+                SyncBuildingsToggle();
+            }
+        }
+
+        void Start()
+        {
+            if (_layers == null || _wired) return;
+            WireLayer(toggleAccess, CityLayer.Access);
+            WireLayer(toggleFlags, CityLayer.Flags);
+            WireLayer(toggleBuildingId, CityLayer.BuildingId);
+            WireOverlay(overlayRailOnRoad);
+            WireOverlay(overlayUnmarked);
+            WireOverlay(overlayCrosswalk);
+            WireOverlay(overlayGate);
+            WireOverlay(overlayBridge);
+            if (toggleBuildings != null)
+            {
+                toggleBuildings.onValueChanged.AddListener(on =>
+                {
+                    if (!_syncing && _buildings != null)
+                    {
+                        _buildings.Visible = on;
+                    }
+                });
+            }
+
+            resetCameraButton?.onClick.AddListener(() => _cameraRig?.ResetView());
+            collapseButton?.onClick.AddListener(ToggleCollapsed);
+            expandButton?.onClick.AddListener(ToggleCollapsed);
+            _wired = true;
+            SyncFromModel();
+            SyncBuildingsToggle();
+        }
+
+        void OnDisable()
+        {
+            if (_layers != null) _layers.Changed -= SyncFromModel;
+            if (_buildings != null) _buildings.Changed -= SyncBuildingsToggle;
+        }
+
+        void WireLayer(Toggle t, CityLayer layer)
+        {
+            if (t == null) return;
+            if (layerGroup != null) t.group = layerGroup;
+            t.onValueChanged.AddListener(on => { if (!_syncing && on) _layers.SetLayer(layer); });
+        }
+
+        void WireOverlay(OverlayToggle e)
+        {
+            if (e.toggle == null) return;
+            e.toggle.onValueChanged.AddListener(on => { if (!_syncing) _layers.SetOverlay(e.overlay, on); });
+        }
+
+        void ToggleCollapsed()
+        {
+            bool show = expandedContent != null && !expandedContent.activeSelf;
+            if (expandedContent != null) expandedContent.SetActive(show);
+            if (collapsedChip != null) collapsedChip.SetActive(!show);
+        }
+
+        void SyncFromModel()
+        {
+            if (_layers == null) return;
+            _syncing = true;
+            var layer = _layers.Layer;
+            toggleAccess?.SetIsOnWithoutNotify(layer == CityLayer.Access);
+            toggleFlags?.SetIsOnWithoutNotify(layer == CityLayer.Flags);
+            toggleBuildingId?.SetIsOnWithoutNotify(layer == CityLayer.BuildingId);
+            overlayRailOnRoad.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.RailOnRoad));
+            overlayUnmarked.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.UnmarkedCrossing));
+            overlayCrosswalk.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Crosswalk));
+            overlayGate.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.GatePassage));
+            overlayBridge.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Bridge));
+            _syncing = false;
+        }
+
+        void SyncBuildingsToggle()
+        {
+            if (_buildings == null || toggleBuildings == null)
+            {
+                return;
+            }
+
+            _syncing = true;
+            toggleBuildings.SetIsOnWithoutNotify(_buildings.Visible);
+            _syncing = false;
+        }
+    }
+}

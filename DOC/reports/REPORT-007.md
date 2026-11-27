@@ -1,0 +1,168 @@
+# REPORT-007 — камера и UI-панель (P4)
+
+- Ветка / коммиты: `task/007-camera-ui` от `main` `3003f1a`. Подшаги `7A` (`4b3311d`, `5f26f4b`), `7B` (`a159033`), `7C` — в этом коммите. Запушено в `origin/task/007-camera-ui`.
+- Исполнитель (модель): Composer
+- Версии: ADR-004 v1.1, ADR-003 v1.2, TASK-007 v1.1. `DOC/adr` и `DOC/tasks` не редактировались.
+
+## Что сделано (по подшагам, с отметкой самоприёмки)
+
+- **7A.** `ICameraRig`, `CameraRig`, `CameraRigSettings`, `CameraUiInstaller`; удалён `CityOverviewCamera.cs` (единственное снятое из 006). Сцена: `CameraRig` на Main Camera, installer в SceneContext. Input System (`Mouse`/`Touchscreen`), pan по плоскости `y=0`, границы AABB углов кадра, `ResetView()`. Самоприёмка.
+- **7B.** `CityMapLayerPanel`, `CityMapPanelSafeArea`, prefab `Assets/_Project/UI/CityMapLayerPanel.prefab`, Canvas Screen Space – Camera (1080×2160, match 0.5), EventSystem + `InputSystemUIInputModule`, панель на сцене. Меню `City/Setup City Prototype UI In Scene` (MCP). Самоприёмка.
+- **7C.** Скриншоты `DOC/reports/img/task007_*.png` (Game View 1080×2160, `capture_game_view`), этот рапорт. Самоприёмка.
+
+## Критерии приёмки
+
+| Критерий | Результат | Доказательство |
+|---|---|---|
+| Core / 006 код не менялся (кроме удаления overview) | да | `git diff main...HEAD` — нет `Core/`, `GroundView`, `BuildingsView`, `CityInstaller`, `LayerComposer` |
+| asmdef по-прежнему два | да | только `ZombieCity.City.Core` + EditMode-тесты |
+| EditMode-тесты | да | **145** passed (после слияния 008 в 007, `TASK-009`) |
+| Тогл «Здания» → `IBuildingsView.Visible` | да | `panel_buildings_toggle.png`, коммит `[TASK-007/7B]` |
+| Камера + UI в `City_Prototype` | да | Play Mode, панорама/зум мышью, панель |
+| Скриншоты 1080×2160 | да | 6 файлов в `DOC/reports/img/` |
+| `CameraUiInstaller` в SceneContext | да | сцена + отчёт |
+| Ветка на origin | да | `task/007-camera-ui` |
+
+## Скриншоты (7C)
+
+| Файл | Содержание |
+|---|---|
+| `task007_panel_access_crosswalk.png` | панель развёрнута, Access, оверлей Crosswalk |
+| `task007_panel_collapsed.png` | панель свёрнута |
+| `task007_layer_flags.png` | слой Flags |
+| `task007_layer_building_id.png` | слой BuildingId |
+| `task007_camera_pitch_90.png` | камера pitch 90° (`CameraRigSettings`) |
+| `task007_camera_pitch_60.png` | камера pitch 60° (`CameraRigSettings`) |
+| `panel_buildings_toggle.png` | BuildingId, здания скрыты (`IBuildingsView.Visible = false`), панель развёрнута |
+| `task007_panel_sync_flags.png` | Flags + Crosswalk, Buildings off |
+| `task007_camera_pitch_60_zoom.png` | pitch 60°, центр (88, 49), ortho 25 |
+| `task010_ui_diagnosis.png` | диагностика 10A: здание под панелью (pan −72, 58) |
+
+## Исправления (TASK-010)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **10A** | крыша под текстом UI, полупрозрачные кнопки | `Canvas.planeDistance = near+0,5` (**0,8**); подложка панели **#202020** α≈0,9; непрозрачные кнопки/тоглы | UI читается на кадрах с зданием под панелью (`task010_ui_diagnosis.png`); overlay-камера не понадобилась |
+| **10B** | рассинхрон панели при программной смене | `OnEnable`/`OnDisable` + `Changed`; съёмка через `ILayerView`/`IBuildingsView` | `task007_panel_sync_flags.png`: Flags + Crosswalk on, Buildings off |
+| **10C** | pitch 60° = 90° на скринах | pitch на `CameraRig.ActiveSettings`; `SetViewFrame(88, 49, 25)` | SHA256: 90°=`11c5d3c65f27`, 60°=`6cc437a2508e`; zoom `task007_camera_pitch_60_zoom.png`; euler.x≈60° в Play |
+| **10D** | «Здания», тусклые тоглы | prefab «Buildings», контраст check/on | пересборка prefab |
+| **10E** | старые кадры | все PNG 1080×2160 (`capture_game_view`); GC bench 600 кадров | **145/145** EditMode; GC: **nonZero=0**, total=0, max=0 B (`City/Run GC bench`) |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-010)`, `City/Apply UI Canvas Plane Distance (TASK-010)`.
+
+## Исправления (TASK-011)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **11A** | `SetViewFrame` без учёта portrait-aspect; нет лога кадра | `referenceAspect = 1080/2160` в `SetViewFrame`; `LogCaptureState`; `EnsureViewLimits` при раннем вызове; меню съёмки ждёт кадры до `SaveCapture` | focus/ortho/pitch в логе совпадают с пресетом (см. строки ниже) |
+| **11B** | нет Crosswalk на карте, неверный центр/масштаб | `ApplySyncFlagsView`: Flags + только Crosswalk, Buildings off, `(88,49,25)`, pitch 90° | `task007_panel_sync_flags.png` 1080×2160 (`capture_game_view`) |
+| **11C** | чёрный `pitch_60_zoom` | `ApplyPitch60ZoomView`: Access, Buildings on, без оверлеев, `(120,14,20)`, pitch 60°; zoom кадр — `capture_game_view` **source=camera** | SHA256: 90°=`20dcc8d5050b`, 60°=`e1e433b6516d`, zoom=`dc68619ffe9b` (различаются) |
+| **11D** | подложка α≈0,75; диагностика без здания под панелью | prefab подложка **α=242** (~0,95); диагностика `(-48,62,22)`, здания on, Reset **magenta** opaque | `task010_ui_diagnosis.png`; **перекрытия по глубине нет** (overlay UI поверх карты, planeDistance 0,8) |
+| **11E** | неполный/устаревший комплект | 10 PNG в `DOC/reports/img/`; таблица состояний; меню **TASK-011** | EditMode **145/145** |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-011)` (авто-цепочка + `SessionState` после domain reload). Для архитектора: приоритетный способ — `ApplyReport007State(n)` в Play + пауза ≥3 с + **`capture_game_view` 1080×2160** (как в 11E).
+
+### Состояние кадров (TASK-011)
+
+| Файл | Слой | Оверлеи | Buildings | focus (x,z) | ortho | pitch | Лог / примечание |
+|------|------|---------|-----------|---------------|-------|-------|------------------|
+| `task007_panel_access_crosswalk.png` | Access | Crosswalk | on | map center | start | 90° | развёрнутая панель |
+| `task007_panel_collapsed.png` | Access | Crosswalk | on | — | — | — | свёрнута |
+| `task007_layer_flags.png` | Flags | off | on | — | — | — | развёрнута |
+| `task007_layer_building_id.png` | BuildingId | off | on | — | — | — | |
+| `task007_panel_sync_flags.png` | Flags | Crosswalk | off | (88, 49) | 25 | 90° | `capture panel_sync_flags focus=(88,49) ortho=25 pitch=90 aspect=0,5` |
+| `panel_buildings_toggle.png` | BuildingId | off | off | — | — | — | |
+| `task007_camera_pitch_90.png` | — | — | — | center | start | 90° | full map |
+| `task007_camera_pitch_60.png` | — | — | — | center | start | 60° | full map |
+| `task007_camera_pitch_60_zoom.png` | Access | off | on | (120, 14) | 20 | 60° | `pitch_60_zoom_setup focus=(120,14) ortho=20 pitch=60` |
+| `task010_ui_diagnosis.png` | Access | off | on | (-48, 62) | 22 | 90° | `ui_diagnosis focus=(-48,62) ortho=22 pitch=90` |
+
+## Исправления (TASK-012)
+
+Исполнитель (модель): **Composer**. Unity **6000.5.9f1**.
+
+| Подшаг | Было | Сделано | Результат |
+|--------|------|---------|-----------|
+| **12A** | magenta «Reset camera» на всех кадрах | Причина: `ApplyDiagnosisView` красил кнопку без гарантированного сброса; диагностика шла **первой** в цепочке. `DiagnosisResetScope` + `Begin/EndDiagnosisResetHighlight`, `try/finally` и отдельный шаг **11** после `SaveCapture`; `RestoreResetButtonColor()` при старте; диагностика — **последний** кадр | В prefab/scene YAML нет `1,0.1,0.85` (поиск по `CityMapLayerPanel.prefab`, сцена — без magenta); штатный fill `{r:0.1647,g:0.1647,b:0.1647,a:0.949}` |
+| **12B** | смешанный комплект; `layer_building_id` с крышами | Пересъёмка 10× **1080×2160** (`capture game_view` + `ApplyReport007State`); BuildingId **Buildings off** (шаг 3 / state 3); zoom — `source=camera` | SHA256: 90°=`11484d72ca5c`, 60°=`31eb8bbe2351`, zoom=`d2794aa9791f`; magenta только `task010_ui_diagnosis.png` |
+| **12C** | — | Раздел TASK-012, коммит, push | EditMode **145/145**; запрещённые файлы без diff |
+
+Меню: `City/Capture REPORT-007 Screenshots (TASK-012)` (диагностика в конце, шаги 10–11).
+
+### Состояние кадров (TASK-012, актуальный комплект)
+
+| Файл | Слой | Оверлеи | Buildings | focus | ortho | pitch |
+|------|------|---------|-----------|-------|-------|-------|
+| `task007_panel_access_crosswalk.png` | Access | Crosswalk | on | map center | start | 90° |
+| `task007_panel_collapsed.png` | Access | Crosswalk | on | — | — | — |
+| `task007_layer_flags.png` | Flags | off | on | — | — | — |
+| `task007_layer_building_id.png` | BuildingId | off | **off** | — | — | — |
+| `task007_panel_sync_flags.png` | Flags | Crosswalk | off | (88, 49) | 25 | 90° |
+| `panel_buildings_toggle.png` | BuildingId | off | off | — | — | — |
+| `task007_camera_pitch_90.png` | — | — | — | center | start | 90° |
+| `task007_camera_pitch_60.png` | — | — | — | center | start | 60° |
+| `task007_camera_pitch_60_zoom.png` | Access | off | on | (120, 14) | 20 | 60° |
+| `task010_ui_diagnosis.png` | Access | off | on | (-48, 62) | 22 | 90° (Reset magenta **только здесь**) |
+
+## Файлы (новые / существенные)
+
+**Runtime:** `Scene/ICameraRig.cs`, `CameraRig.cs`, `CameraRigSettings.cs`, `CameraUiInstaller.cs`; `UI/CityMapLayerPanel.cs`, `CityMapPanelSafeArea.cs`.
+
+**Assets:** `City/Scene/CameraRigSettings_Default.asset`; `UI/CityMapLayerPanel.prefab`; сцена `City_Prototype.unity`.
+
+**Editor:** `CityPrototypeUiSceneSetup.cs` (prefab + setup сцены), `CityReport007ScreenshotMenu.cs` (скриншоты для рапорта).
+
+**Удалено:** `CityOverviewCamera.cs` (+ `.meta`).
+
+## Цифры
+
+- Unity **6000.5.9f1**, URP, Extenject 9.2, Input System package **1.20.1** (`activeInputHandler: Input System`).
+- Модель района: `CityModel_map` / `CityBake_map` (без перепека в 007).
+- Меш на старте сцены: зданий **69**, вершин **4060**, треуг. **2300** (лог `[City] buildings ...`, типично ~90–150 мс).
+
+## Смены сцены (MCP)
+
+- Снят `CityOverviewCamera`, добавлен `CameraRig` на Main Camera.
+- `CameraUiInstaller` на `SceneContext`, ссылки на rig и `CameraRigSettings_Default`.
+- Меню **`City/Setup City Prototype UI In Scene`**: Canvas, EventSystem, экземпляр prefab панели.
+
+## Ввод и касание
+
+- Активен **только Input System** (`Project Settings → Player → Active Input Handling = Input System Package`).
+- Мышь: панорама ЛКМ, зум колёсиком; UI блокирует жесты (`IsPointerOverGameObject`).
+- **Касание / щипок:** код реализован (`Touchscreen`, pinch); **на устройстве и Device Simulator не проверял** (эмуляции pinch на мыши нет).
+
+## Производительность (GC)
+
+- `CameraRig.Update` и `CityMapLayerPanel`: без LINQ, без `new List`/массивов в цикле; поля кэшируются, pinch обходит `touches` без аллокаций.
+- `CityMapPanelSafeArea.Update` только сравнивает `safeArea` / размер экрана.
+- **TASK-010:** `CityReport007GcBench` — 600 кадров, пан/зум через `SetViewFrame`, смена слоёв/оверлеев: **0 B** `GC.Allocated In Frame` (nonZero=0).
+
+## Отклонения от ТЗ и почему
+
+- Скриншоты сняты через **Unity MCP `capture_game_view`** 1080×2160, не вручную из закреплённого Game View; после `ApplyReport007State` — пауза ~2 с до кадра (стабилизация pitch/текстуры).
+- Тогл «Здания» добавлен в **TASK-009/9E** после слияния 008 (см. `panel_buildings_toggle.png`).
+
+## ADR-change-request
+
+Нет.
+
+## Известные проблемы / ограничения
+
+- Автоматический захват через меню `City/Capture REPORT-007 Screenshots` без MCP менее надёжен, чем `ApplyReport007State` + `capture_game_view`; для архитектора при сомнении — повторить шесть кадров по таблице выше.
+- Pitch 60° меняет только `CameraRigSettings_Default.asset` в Play Mode; после проверки в ассете снова **90°** (если редактировался в play).
+
+## Вопросы
+
+Нет.
+
+## Как проверить
+
+1. Ветка `task/007-camera-ui`, сцена `Assets/_Project/Scenes/City_Prototype.unity`.
+2. Play, Game View 1080×2160: панель слева, слои и оверлеи, Reset camera, сворачивание.
+3. EditMode: `ZombieCity.City.Core.Tests` — все зелёные.
+4. При необходимости пересобрать UI: `City/Build Map Layer Panel Prefab`, `City/Setup City Prototype UI In Scene`.
