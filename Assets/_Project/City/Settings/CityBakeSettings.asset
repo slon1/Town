@@ -26,6 +26,7 @@ MonoBehaviour:
     barrierWidth: 0.5
     crosswalkWidthFallback: 3
     railwayWidth: 3
+    tramTrackWidth: 2.4
     gateRadius: 1.5
     useCropBBox: 0
     cropMinLat: 0
