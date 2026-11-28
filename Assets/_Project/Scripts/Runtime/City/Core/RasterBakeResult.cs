@@ -28,6 +28,8 @@ namespace ZombieCity.City.Core
         public int waterClearedByLinear;
         public int railClearedByLinear;
         public int tramSkipped;
+        public int tramStamped;
+        public int tramCells;
         public int buildingCount;
     }
 
