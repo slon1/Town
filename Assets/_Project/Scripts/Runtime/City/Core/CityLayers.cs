@@ -19,6 +19,7 @@ namespace ZombieCity.City.Core
         UnmarkedCrossing = 1 << 1,
         Crosswalk = 1 << 2,
         GatePassage = 1 << 3,
-        Bridge = 1 << 4
+        Bridge = 1 << 4,
+        Tram = 1 << 5
     }
 }
