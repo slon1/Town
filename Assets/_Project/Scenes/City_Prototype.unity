@@ -1699,6 +1699,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieCity.City.Scene.GroundView
   material: {fileID: 2100000, guid: 027716d514c546a4db5a5d11aaf4c1b8, type: 2}
+  initialOverlays: 32
 --- !u!23 &1511139785
 MeshRenderer:
   m_ObjectHideFlags: 0

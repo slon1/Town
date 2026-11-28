@@ -13,6 +13,7 @@ namespace ZombieCity.City.Scene
     public sealed class GroundView : MonoBehaviour, ILayerView
     {
         [SerializeField] Material material;
+        [SerializeField] CityOverlay initialOverlays = CityOverlay.Tram;
 
         CityBakeAsset _bake;
         CityLayer _layer = CityLayer.Access;
@@ -32,9 +33,15 @@ namespace ZombieCity.City.Scene
             _bake = bake;
         }
 
+        void Awake()
+        {
+            _overlays = initialOverlays;
+        }
+
         void Start()
         {
             Rebuild();
+            Changed?.Invoke();
         }
 
         public void SetLayer(CityLayer layer)
