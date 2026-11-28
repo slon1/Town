@@ -1,6 +1,6 @@
 # ADR-001 — Офлайн-запекание города из OSM в модель и растровые слои
 
-Статус: **Принято** (v1.3: `Railway.kind`). Охватывает фазы P1–P3; контракты P4+ уточняются отдельными ADR.
+Статус: **Принято** (v1.5: `CellFlags.Tram`, бит 15). Охватывает фазы P1–P3; контракты P4+ уточняются отдельными ADR.
 
 Область: только загрузка и разметка города. Агенты, поля управления и фреймворк частиц **вне объёма** (решение оператора).
 
@@ -41,7 +41,7 @@
 | `Meta` | источник (имя файла), bbox lat/lon, `lat0/lon0`, размер в метрах, хэш настроек, хэш данных |
 | `Road` (линия) | `osmId`, `HighwayClass`, `widthM` (разрешённая), `layer`, `isBridge`, `isTunnel`, `isBuildingPassage`, `isShared`, `sidewalkMode` (None/Left/Right/Both/Unknown), точки `Vec2d[]` |
 | `Walkway` (линия) | `osmId`, `WalkwayKind` (Footway, Sidewalk, Crossing, Path, Steps, Cycleway, Pedestrian), `widthM`, `layer`, `isBridge`, `isTunnel`, `isBuildingPassage`, точки |
-| `Area` (полигон с дырами) | `osmId`, `AreaKind` (Building, Water, Green, PedestrianArea, Other), кольца (outer CCW, holes CW), для зданий: `heightM`, `minHeightM`, `buildingType` (string) |
+| `Area` (полигон с дырами) | `osmId`, `AreaKind` (Building, Water, Green, PedestrianArea, Other), кольца (outer CCW, holes CW), для зданий: `heightM`, `minHeightM`, `heightSource` (HeightTag / Levels / Default), `buildingType` (string) |
 | `Barrier` (линия) | `osmId`, `BarrierKind` (Wall, Fence, Hedge, Other, Gate-узлы отдельно), точки |
 | `Railway` (линия) | `osmId`, `RailwayKind` (Rail, LightRail, Subway, Tram, NarrowGauge, Other), `isBridge`, `isTunnel`, `layer`, точки |
 | `Waterway` (линия) | `osmId`, `WaterwayKind` (Canal, River, Stream, Other), `isTunnel` (в т. ч. culvert), точки |
@@ -53,7 +53,7 @@
 - **Дорога для транспорта** (`Road`): `highway` ∈ motorway, trunk, primary, secondary, tertiary, unclassified, residential, living_street, service и `*_link`. Ширина: тег `width` (парсить «6», «6.5», «6 m») → иначе `lanes · 3.0` → иначе по таблице: primary 10, secondary 9, tertiary 8, residential 6.5, living_street 5, service 4, link 5, прочие 6. `living_street` получает `isShared = true`.
 - **Пешеходное** (`Walkway`): `highway` ∈ footway (включая `footway=sidewalk|crossing`), path, pedestrian, steps, cycleway, track (кроме `track` с `motor_vehicle=yes|designated` — он `Road`, ширина 3.0). Ширина: `width` → иначе footway 2.0, sidewalk 2.0, crossing 3.0, path 1.5, pedestrian 4.0, steps 2.0, cycleway 2.0, track 3.0. `highway=pedestrian` с `area=yes` — это `Area(PedestrianArea)`.
 - **Мосты/туннели**: `bridge=yes|viaduct|*` (кроме `no`) → `isBridge`; `tunnel=yes|culvert` → `isTunnel`; **`tunnel=building_passage`** → `isBuildingPassage` (не туннель: проход сквозь здание). Также `covered=yes` для линий — игнорируется. `layer` — целое, по умолчанию 0.
-- **Здания**: `building` ≠ `no`. Высота: `height` (парсить число, «m», допускается запятая как десятичный разделитель) → иначе `building:levels · 3.0` + `roof:levels · 1.5`(необязательно, из настроек) → иначе `defaultBuildingHeight` (12 м). Минимум 3 м. `building:part` пока игнорируется (учитывать счётчиком).
+- **Здания**: `building` ≠ `no`. Источник высоты сохраняется в `heightSource` (`HeightTag` — из тега `height`; `Levels` — из `building:levels`; `Default` — значение по умолчанию); в канонических байтах — `int32` сразу после `minHeightM`. Высота: `height` (парсить число, «m», допускается запятая как десятичный разделитель) → иначе `building:levels · 3.0` + `roof:levels · 1.5`(необязательно, из настроек) → иначе `defaultBuildingHeight` (12 м). Минимум 3 м. `building:part` пока игнорируется (учитывать счётчиком).
 - **Зелень**: `leisure` ∈ park, garden, playground, pitch; `landuse` ∈ grass, forest, meadow, village_green, recreation_ground; `natural` ∈ wood, scrub, grassland. **Вода**: `natural=water`, `waterway=riverbank`; линии `waterway=canal|river|stream` хранятся как `Waterway`; в P2 растеризуются шириной `waterwayWidth` (по умолчанию 4 м; осознанное упрощение); `tunnel`/`culvert` → `isTunnel`, в растр не попадают.
 - **Барьеры**: `barrier` ∈ wall, fence, hedge, retaining_wall, guard_rail, city_wall, ... (список в настройках). Узлы `barrier=gate|entrance|lift_gate|bollard` — `PointFeature` (ворота открывают проход; линия барьера в модели **не разрезается**, проём делается только в растре, бит `Gate`).
 - **Железная дорога**: `railway` ∈ rail, light_rail, subway, tram, narrow_gauge (список в настройках); `subway` и туннели уходят в `isTunnel` и в растр не попадают. Значение тега сохраняется в `RailwayKind` (в канонических байтах — `int32`, сразу после `osmId`).
@@ -102,7 +102,7 @@
 | 12 | `Steps` | Лестница |
 | 13 | `Gate` | Проём в барьере (ворота/вход) |
 | 14 | `Shared` | Смешанная улица (`isShared`, `living_street`): вместе с `Road` даёт класс доступа `Pedestrian` |
-| 15 | резерв | |
+| 15 | `Tram` | Трамвайное полотно (штампуется с ADR-002 v1.3); на класс доступа **не влияет** |
 
 Клетка без битов = «открытое место» (двор, площадь без разметки): **проходимо по умолчанию**; запретом служат только `Building`, `Water`, `Barrier`, `Rail` (если не перекрыты `Bridge`/`Gate`/`BuildingPassage`).
 
