@@ -3,7 +3,7 @@
 grid=680×484 cell=0.5 m
 islandMinCells=200
 crosswalkEndSearchRadius=3.0 m
-dataHash=0xF638028B4A17E60C accessHash=0x7EB6425EF2B7EC93
+dataHash=0x060F15F16A92530C accessHash=0x7EB6425EF2B7EC93
 
 ## Class shares
 
@@ -12,6 +12,16 @@ dataHash=0xF638028B4A17E60C accessHash=0x7EB6425EF2B7EC93
 | Obstacle | 79056 | 19764.0 | 24.02 |
 | Roadway | 31284 | 7821.0 | 9.51 |
 | Pedestrian | 218780 | 54695.0 | 66.47 |
+
+## Tram
+
+cells: **6586** (1646.5 m²)
+
+| Access class | cells |
+|--------------|------:|
+| Obstacle | 12 |
+| Roadway | 82 |
+| Pedestrian | 6492 |
 
 ## PedestrianMask components
 
