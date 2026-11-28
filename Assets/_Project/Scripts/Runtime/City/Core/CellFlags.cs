@@ -23,6 +23,7 @@ namespace ZombieCity.City.Core
         Cycleway = 1 << 11,
         Steps = 1 << 12,
         Gate = 1 << 13,
-        Shared = 1 << 14
+        Shared = 1 << 14,
+        Tram = 1 << 15
     }
 }

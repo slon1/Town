@@ -81,6 +81,8 @@ namespace ZombieCity.City.EditorTools
             AppendShare(sb, "Roadway", ped.roadwayCells, cellArea, total);
             AppendShare(sb, "Pedestrian", ped.pedestrianCells, cellArea, total);
             sb.AppendLine();
+            AppendTram(sb, flags, access, cellArea);
+            sb.AppendLine();
             sb.AppendLine("## PedestrianMask components");
             sb.AppendLine();
             AppendComponents(sb, ped, cellArea, topN: 15);
@@ -262,6 +264,47 @@ namespace ZombieCity.City.EditorTools
                 default:
                     return "оба конца без тротуара";
             }
+        }
+
+        static void AppendTram(StringBuilder sb, ushort[] flags, byte[] access, double cellArea)
+        {
+            int cells = 0;
+            int obstacle = 0;
+            int roadway = 0;
+            int pedestrian = 0;
+            int n = flags != null ? flags.Length : 0;
+            for (int i = 0; i < n; i++)
+            {
+                if ((flags[i] & (ushort)CellFlags.Tram) == 0)
+                {
+                    continue;
+                }
+
+                cells++;
+                byte cls = access != null && i < access.Length ? access[i] : (byte)0;
+                if (cls == (byte)CityAccess.Obstacle)
+                {
+                    obstacle++;
+                }
+                else if (cls == (byte)CityAccess.Roadway)
+                {
+                    roadway++;
+                }
+                else
+                {
+                    pedestrian++;
+                }
+            }
+
+            sb.AppendLine("## Tram");
+            sb.AppendLine();
+            sb.AppendLine($"cells: **{cells}** ({(cells * cellArea).ToString("F1", CultureInfo.InvariantCulture)} m²)");
+            sb.AppendLine();
+            sb.AppendLine("| Access class | cells |");
+            sb.AppendLine("|--------------|------:|");
+            sb.AppendLine($"| Obstacle | {obstacle} |");
+            sb.AppendLine($"| Roadway | {roadway} |");
+            sb.AppendLine($"| Pedestrian | {pedestrian} |");
         }
 
         static string BuildConsole(

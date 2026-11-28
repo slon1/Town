@@ -198,7 +198,7 @@ namespace ZombieCity.City.Core.Tests
         }
 
         [Test]
-        public void Tram_NotRasterized_CountedAsEntity()
+        public void Tram_StampedSeparately_RailUnchanged()
         {
             var model = EmptyModel();
             model.railways = new[]
@@ -208,10 +208,15 @@ namespace ZombieCity.City.Core.Tests
             };
 
             RasterBakeResult baked = CityRasterizer.Bake(model, Cfg());
-            Assert.AreEqual(1, baked.stats.tramSkipped);
+            Assert.AreEqual(0, baked.stats.tramSkipped);
+            Assert.AreEqual(1, baked.stats.tramStamped);
             Assert.AreEqual(RailwayKind.Tram, model.railways[0].kind);
-            Assert.AreEqual(0, FlagAt(baked, 0, 0) & (ushort)CellFlags.Rail);
-            Assert.AreNotEqual(0, FlagAt(baked, 10, 0) & (ushort)CellFlags.Rail);
+            ushort tram = FlagAt(baked, 0, 0);
+            Assert.AreNotEqual(0, tram & (ushort)CellFlags.Tram);
+            Assert.AreEqual(0, tram & (ushort)CellFlags.Rail);
+            ushort rail = FlagAt(baked, 10, 8);
+            Assert.AreNotEqual(0, rail & (ushort)CellFlags.Rail);
+            Assert.AreEqual(0, rail & (ushort)CellFlags.Tram);
         }
 
         [Test]

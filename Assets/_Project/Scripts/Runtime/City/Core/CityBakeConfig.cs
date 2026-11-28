@@ -43,6 +43,7 @@ namespace ZombieCity.City.Core
         public float barrierWidth = 0.5f;
         public float crosswalkWidthFallback = 3f;
         public float railwayWidth = 3f;
+        public float tramTrackWidth = 2.4f;
         public float gateRadius = 1.5f;
         public int islandMinCells = 200;
         public float crosswalkEndSearchRadius = 3f;
@@ -112,6 +113,7 @@ namespace ZombieCity.City.Core
             w.WriteMeters(barrierWidth);
             w.WriteMeters(crosswalkWidthFallback);
             w.WriteMeters(railwayWidth);
+            w.WriteMeters(tramTrackWidth);
             w.WriteMeters(gateRadius);
             w.WriteInt32(islandMinCells);
             w.WriteMeters(crosswalkEndSearchRadius);

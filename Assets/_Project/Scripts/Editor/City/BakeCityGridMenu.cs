@@ -98,15 +98,15 @@ namespace ZombieCity.City.EditorTools
             }
 
             sb.AppendLine($"  buildings={r.stats.buildingCount} zeroCells={r.stats.buildingsWithZeroCells} conflicts={r.stats.buildingConflicts}");
-            sb.AppendLine($"  underBridges={r.stats.cellsUnderBridges} waterCleared={r.stats.waterClearedByLinear} railCleared={r.stats.railClearedByLinear} tramSkipped={r.stats.tramSkipped} outside={r.stats.objectsOutsideGrid}");
+            sb.AppendLine($"  underBridges={r.stats.cellsUnderBridges} waterCleared={r.stats.waterClearedByLinear} railCleared={r.stats.railClearedByLinear} tramStamped={r.stats.tramStamped} tramCells={r.stats.tramCells} tramSkipped={r.stats.tramSkipped} outside={r.stats.objectsOutsideGrid}");
             sb.AppendLine($"  Road|Crosswalk cells={r.stats.cellsRoadAndCrosswalk}");
             double cellArea = r.grid.cell * (double)r.grid.cell;
             string[] names =
             {
                 "Road", "Sidewalk", "Crosswalk", "Building", "Water", "Barrier", "Rail", "Green",
-                "Bridge", "SidewalkGen", "BuildingPassage", "Cycleway", "Steps", "Gate", "Shared", "bit15"
+                "Bridge", "SidewalkGen", "BuildingPassage", "Cycleway", "Steps", "Gate", "Shared", "Tram"
             };
-            for (int b = 0; b < 15; b++)
+            for (int b = 0; b < 16; b++)
             {
                 int c = r.stats.cellsByBit != null && b < r.stats.cellsByBit.Length ? r.stats.cellsByBit[b] : 0;
                 if (c == 0)

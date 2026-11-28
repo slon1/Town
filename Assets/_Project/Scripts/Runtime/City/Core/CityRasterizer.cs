@@ -10,7 +10,7 @@ namespace ZombieCity.City.Core
     {
         const ushort BuildingClearMask = (ushort)(
             CellFlags.Road | CellFlags.Sidewalk | CellFlags.Cycleway | CellFlags.Steps |
-            CellFlags.Crosswalk | CellFlags.Shared | CellFlags.Green);
+            CellFlags.Crosswalk | CellFlags.Shared | CellFlags.Green | CellFlags.Tram);
 
         const ushort BridgeClearMask = (ushort)(
             CellFlags.Water | CellFlags.Building | CellFlags.Road | CellFlags.Sidewalk |
@@ -42,10 +42,11 @@ namespace ZombieCity.City.Core
             ApplyAreas(model.areas, AreaKind.Water, grid, flags, (ushort)CellFlags.Water, null, buildingId, stats, clearWater: false, clearRail: false);
             ApplyWaterways(model.waterways, config, grid, flags, stats);
 
-            // Railway between water and roads (ADR-002 v1.2). Tram is skipped here.
+            // Railway between water and roads. Tram is not Rail (ADR-002 v1.3).
             ApplyRailwaysSurface(model.railways, config, grid, flags, stats);
+            ApplyTrams(model.railways, config, grid, flags, stats);
 
-            // --- Roads (surface): clear Water and Rail ---
+            // --- Roads (surface): clear Water and Rail. Tram stays. ---
             ApplyRoadsSurface(model.roads, grid, flags, stats);
 
             // --- Walkways + PedestrianArea: clear Water and Rail ---
@@ -165,6 +166,53 @@ namespace ZombieCity.City.Core
             }
         }
 
+        static void ApplyTrams(
+            Railway[] railways, CityBakeConfig config, CityGrid grid, ushort[] flags, RasterStats stats)
+        {
+            if (railways == null)
+            {
+                return;
+            }
+
+            Railway[] sorted = (Railway[])railways.Clone();
+            Array.Sort(sorted, (a, b) => a.osmId.CompareTo(b.osmId));
+            for (int i = 0; i < sorted.Length; i++)
+            {
+                Railway r = sorted[i];
+                if (r == null || r.kind != RailwayKind.Tram)
+                {
+                    continue;
+                }
+
+                if (r.isTunnel)
+                {
+                    stats.tramSkipped++;
+                    continue;
+                }
+
+                if (r.points == null || r.points.Length < 2)
+                {
+                    continue;
+                }
+
+                int stamped = 0;
+                ushort bit = (ushort)CellFlags.Tram;
+                RasterPrimitives.ForEachPolylineCapsuleA(grid, r.points, config.tramTrackWidth, (ci, cj) =>
+                {
+                    flags[grid.Index(ci, cj)] |= bit;
+                    stamped++;
+                });
+                if (stamped == 0)
+                {
+                    stats.objectsOutsideGrid++;
+                }
+                else
+                {
+                    stats.tramStamped++;
+                }
+            }
+        }
+
         static void ApplyRoadsSurface(Road[] roads, CityGrid grid, ushort[] flags, RasterStats stats)
         {
             if (roads == null)
@@ -249,7 +297,6 @@ namespace ZombieCity.City.Core
 
                 if (r.kind == RailwayKind.Tram)
                 {
-                    stats.tramSkipped++;
                     continue;
                 }
 
@@ -747,6 +794,8 @@ namespace ZombieCity.City.Core
                     stats.cellsRoadAndCrosswalk++;
                 }
             }
+
+            stats.tramCells = stats.cellsByBit[15];
         }
 
         static ulong ComputeDataHash(
