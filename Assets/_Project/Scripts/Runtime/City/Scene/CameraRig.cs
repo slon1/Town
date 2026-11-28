@@ -1,3 +1,4 @@
+using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -27,6 +28,9 @@ namespace ZombieCity.City.Scene
         float _lastPinchDistance;
         int _touchPanId = -1;
         Vector2 _lastTouchPanScreen;
+#if UNITY_EDITOR
+        static bool _wheelScrollDiagLogged;
+#endif
 
         [Inject]
         public void Construct(ICityMap map, CameraRigSettings settings)
@@ -159,7 +163,26 @@ namespace ZombieCity.City.Scene
             else if (mouse.leftButton.wasReleasedThisFrame) _mousePanActive = false;
             if (_mousePanActive && mouse.leftButton.isPressed) { PanScreen(_lastPanScreen, pos); _lastPanScreen = pos; }
             float scroll = mouse.scroll.ReadValue().y;
-            if (Mathf.Abs(scroll) > 0.01f) ZoomByFactor(1f - scroll * _settings.zoomSpeedWheel * 0.01f);
+            if (Mathf.Abs(scroll) > 0.001f)
+            {
+                float unit = ResolveScrollUnit(scroll);
+                float notches = scroll / unit;
+                notches = Mathf.Clamp(notches, -12f, 12f);
+#if UNITY_EDITOR
+                if (!_wheelScrollDiagLogged)
+                {
+                    _wheelScrollDiagLogged = true;
+                    Debug.Log(
+                        "[City] wheel scroll sample scroll.y="
+                        + scroll.ToString("0.###")
+                        + " unit="
+                        + unit.ToString("0.###")
+                        + " notches="
+                        + notches.ToString("0.###"));
+                }
+#endif
+                ApplyZoomAtScreen(pos, notches);
+            }
         }
 
         void HandleTouch()
@@ -186,8 +209,14 @@ namespace ZombieCity.City.Scene
                 if (!_pinchActive) { _pinchActive = true; _lastPinchDistance = dist; }
                 else if (_lastPinchDistance > 1f)
                 {
-                    float scale = dist / _lastPinchDistance;
-                    ZoomByFactor(1f + (1f - scale) * _settings.pinchSensitivity);
+                    float ratio = dist / _lastPinchDistance;
+                    if (ratio > 1e-4f && Mathf.Abs(ratio - 1f) > 1e-4f)
+                    {
+                        float notches = Mathf.Log(ratio) * _settings.pinchSensitivity;
+                        var mid = (p0 + p1) * 0.5f;
+                        ApplyZoomAtScreen(mid, notches);
+                    }
+
                     _lastPinchDistance = dist;
                 }
                 _mousePanActive = false;
@@ -213,10 +242,46 @@ namespace ZombieCity.City.Scene
             _focusXZ.y -= (b.z - a.z) * _settings.panSensitivity;
         }
 
-        void ZoomByFactor(float factor)
+        public void ApplyZoomNotches(Vector2 screen, float notches) => ApplyZoomAtScreen(screen, notches);
+
+        public void LogWheelNotchTable(Vector2 screen)
         {
-            if (factor <= 0f) return;
-            _camera.orthographicSize = Mathf.Clamp(_camera.orthographicSize * factor, _settings.minOrthoSize, _maxOrthoSize);
+            ResetView();
+            var sb = new StringBuilder();
+            sb.Append("[City] wheel notch table screen=(").Append(screen.x.ToString("0")).Append(",").Append(screen.y.ToString("0")).Append(")");
+            for (var n = 0; n <= 12; n++)
+            {
+                if (n > 0) ApplyZoomAtScreen(screen, 1f);
+                sb.Append(" | ").Append(n).Append("->").Append(_camera.orthographicSize.ToString("0.##"));
+            }
+
+            Debug.Log(sb.ToString());
+        }
+
+        void ApplyZoomAtScreen(Vector2 screen, float notches)
+        {
+            if (Mathf.Abs(notches) < 1e-6f) return;
+            EnsureViewLimits();
+
+            var hasAnchor = TryGroundHit(screen, out var anchor);
+            var factor = Mathf.Exp(-_settings.zoomPerNotch * notches);
+            var newOrtho = Mathf.Clamp(_camera.orthographicSize * factor, _settings.minOrthoSize, _maxOrthoSize);
+            if (Mathf.Approximately(newOrtho, _camera.orthographicSize)) return;
+
+            _camera.orthographicSize = newOrtho;
+            if (hasAnchor && TryGroundHit(screen, out var after))
+            {
+                _focusXZ.x += anchor.x - after.x;
+                _focusXZ.y += anchor.z - after.z;
+            }
+        }
+
+        float ResolveScrollUnit(float scrollY)
+        {
+            var unit = _settings.scrollNotchUnit;
+            if (unit < 1f) unit = 120f;
+            var abs = Mathf.Abs(scrollY);
+            return abs >= unit * 0.25f ? unit : 1f;
         }
 
         void ClampFocusToBounds()
