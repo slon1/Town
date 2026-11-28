@@ -18,6 +18,7 @@ namespace ZombieCity.City.Core
         const uint Barrier = 0xFF007AFFu;
         const uint Gate = 0xFF00E0FFu;
         const uint Rail = 0xFFFF4D9Au;
+        const uint Tram = 0xFFFF4D9Au;
         const uint Crosswalk = 0xFFFFFFFFu;
         const uint Sidewalk = 0xFFC8C8C8u;
         const uint Road = 0xFF5A5A5Au;
@@ -28,6 +29,7 @@ namespace ZombieCity.City.Core
         const uint OvUnmarked = 0xFFFF00FFu;
         const uint OvCrosswalk = 0xFF00E0FFu;
         const uint OvGate = 0xFFFFFFFFu;
+        const uint OvTram = 0xFFFF60B0u;
         const uint OvBridge = 0xFFC1D100u;
 
         public static void Compose(
@@ -98,6 +100,10 @@ namespace ZombieCity.City.Core
             {
                 color = Crosswalk;
             }
+            else if ((f & (ushort)CellFlags.Tram) != 0)
+            {
+                color = Tram;
+            }
             else if ((f & (ushort)(CellFlags.Sidewalk | CellFlags.Cycleway | CellFlags.Steps | CellFlags.SidewalkGenerated)) != 0)
             {
                 color = Sidewalk;
@@ -148,6 +154,12 @@ namespace ZombieCity.City.Core
                 && (f & (ushort)(CellFlags.Gate | CellFlags.BuildingPassage)) != 0)
             {
                 color = OvGate;
+                return true;
+            }
+
+            if ((enabled & CityOverlay.Tram) != 0 && (f & (ushort)CellFlags.Tram) != 0)
+            {
+                color = OvTram;
                 return true;
             }
 
