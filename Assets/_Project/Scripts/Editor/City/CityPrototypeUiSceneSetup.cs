@@ -25,6 +25,18 @@ namespace ZombieCity.City.EditorTools
     [MenuItem("City/Build Map Layer Panel Prefab")]
     public static void BuildPrefabMenu() => BuildPrefab();
 
+    [MenuItem("City/Replace Map Layer Panel Instance (TASK-015)")]
+    public static void ReplacePanelInstance()
+    {
+      var existing = Object.FindAnyObjectByType<CityMapLayerPanel>();
+      if (existing != null)
+      {
+        Object.DestroyImmediate(existing.gameObject);
+      }
+
+      Setup();
+    }
+
     [MenuItem("City/Setup City Prototype UI In Scene")]
     public static void Setup()
     {
@@ -129,7 +141,7 @@ namespace ZombieCity.City.EditorTools
       rootRect.anchorMin = new Vector2(0f, 1f);
       rootRect.anchorMax = new Vector2(0f, 1f);
       rootRect.pivot = new Vector2(0f, 1f);
-      rootRect.sizeDelta = new Vector2(PanelWidth, 720f);
+      rootRect.sizeDelta = new Vector2(PanelWidth, 820f);
       root.AddComponent<CityMapPanelSafeArea>();
       var panel = root.AddComponent<CityMapLayerPanel>();
 
@@ -158,6 +170,7 @@ namespace ZombieCity.City.EditorTools
       Toggle oCrosswalk = CreateOverlayToggle(expanded, "Crosswalk");
       Toggle oGate = CreateOverlayToggle(expanded, "Gate / passage");
       Toggle oBridge = CreateOverlayToggle(expanded, "Bridge");
+      Toggle oTram = CreateOverlayToggle(expanded, "Tram");
       Toggle tBuildings = CreateOverlayToggle(expanded, "Buildings");
       CreateButton(expanded, "ResetCamera", "Reset camera", out Button resetBtn);
 
@@ -183,6 +196,7 @@ namespace ZombieCity.City.EditorTools
       SetOverlayBinding(panelSo, "overlayCrosswalk", CityOverlay.Crosswalk, oCrosswalk);
       SetOverlayBinding(panelSo, "overlayGate", CityOverlay.GatePassage, oGate);
       SetOverlayBinding(panelSo, "overlayBridge", CityOverlay.Bridge, oBridge);
+      SetOverlayBinding(panelSo, "overlayTram", CityOverlay.Tram, oTram);
       panelSo.FindProperty("resetCameraButton").objectReferenceValue = resetBtn;
       panelSo.FindProperty("collapseButton").objectReferenceValue = collapseBtn;
       panelSo.FindProperty("expandButton").objectReferenceValue = expandBtn;

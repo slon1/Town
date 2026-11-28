@@ -40,6 +40,7 @@ namespace ZombieCity.City.EditorTools
         static readonly Color32 OvCrosswalk = Hex("#FFE000");
         static readonly Color32 OvGatePassage = Hex("#FFFFFF");
         static readonly Color32 OvBridge = Hex("#00D1C1");
+        static readonly Color32 OvTram = Hex("#B060FF");
 
         CityBakeAsset _bake;
         CityModelAsset _cityModel;
@@ -49,7 +50,8 @@ namespace ZombieCity.City.EditorTools
         bool _ovUnmarked;
         bool _ovCrosswalk = true;
         bool _ovGatePassage;
-        bool _ovBridge;
+        bool _ovBridge = true;
+        bool _ovTram = true;
 
         Texture2D _tex;
         float _zoom = 1f;
@@ -80,9 +82,9 @@ namespace ZombieCity.City.EditorTools
 
         struct OverlayEnable
         {
-            public bool roadRail, unmarked, crosswalk, gatePassage, bridge;
+            public bool roadRail, unmarked, crosswalk, gatePassage, tram, bridge;
 
-            public bool Any => roadRail || unmarked || crosswalk || gatePassage || bridge;
+            public bool Any => roadRail || unmarked || crosswalk || gatePassage || tram || bridge;
         }
 
         OverlayEnable OverlayToggles => new OverlayEnable
@@ -91,6 +93,7 @@ namespace ZombieCity.City.EditorTools
             unmarked = _ovUnmarked,
             crosswalk = _ovCrosswalk,
             gatePassage = _ovGatePassage,
+            tram = _ovTram,
             bridge = _ovBridge
         };
 
@@ -100,6 +103,26 @@ namespace ZombieCity.City.EditorTools
             var w = GetWindow<LayersViewerWindow>("City Layers");
             w.minSize = new Vector2(720, 520);
             w.Show();
+        }
+
+        public static void OpenForTramReport()
+        {
+            var w = GetWindow<LayersViewerWindow>("City Layers");
+            w.minSize = new Vector2(720, 520);
+            w.PrepareForTramReport();
+            w.Show();
+        }
+
+        public void PrepareForTramReport()
+        {
+            _layer = LayerKind.Access;
+            _ovRoadRail = false;
+            _ovUnmarked = false;
+            _ovCrosswalk = false;
+            _ovGatePassage = false;
+            _ovTram = true;
+            _ovBridge = false;
+            Reload();
         }
 
         void OnEnable()
@@ -251,6 +274,7 @@ namespace ZombieCity.City.EditorTools
             changed |= TwoWayToggle(ref _ovUnmarked, "Unmarked", 68);
             changed |= TwoWayToggle(ref _ovCrosswalk, "Crosswalk", 68);
             changed |= TwoWayToggle(ref _ovGatePassage, "Gate/Pass", 68);
+            changed |= TwoWayToggle(ref _ovTram, "Tram", 44);
             changed |= TwoWayToggle(ref _ovBridge, "Bridge", 52);
             if (changed)
             {
@@ -435,7 +459,7 @@ namespace ZombieCity.City.EditorTools
             sb.AppendLine($"cell ({i},{j})  world ({c.x:F2},{c.z:F2})");
             sb.AppendLine($"access={access}");
             sb.AppendLine($"flags={FormatFlags(flags)}");
-            sb.AppendLine(FormatOverlayTooltip(uf));
+            sb.AppendLine(FormatOverlayTooltip(uf, OverlayToggles));
             sb.Append($"buildingId={bid}");
             if (osm != 0)
             {
@@ -445,9 +469,9 @@ namespace ZombieCity.City.EditorTools
             GUI.Label(new Rect(view.x + 8, view.yMax - 88, view.width - 16, 84), sb.ToString(), EditorStyles.helpBox);
         }
 
-        static string FormatOverlayTooltip(ushort f)
+        static string FormatOverlayTooltip(ushort f, OverlayEnable ov)
         {
-            List<string> names = GetMatchingOverlayNames(f);
+            List<string> names = GetMatchingOverlayNames(f, ov);
             if (names.Count == 0)
             {
                 return "overlay: —";
@@ -612,6 +636,12 @@ namespace ZombieCity.City.EditorTools
                 return true;
             }
 
+            if (ov.tram && MatchesTram(f))
+            {
+                color = OvTram;
+                return true;
+            }
+
             if (ov.bridge && MatchesBridge(f))
             {
                 color = OvBridge;
@@ -621,30 +651,35 @@ namespace ZombieCity.City.EditorTools
             return false;
         }
 
-        static List<string> GetMatchingOverlayNames(ushort f)
+        static List<string> GetMatchingOverlayNames(ushort f, OverlayEnable ov)
         {
-            var list = new List<string>(5);
-            if (MatchesRoadRail(f))
+            var list = new List<string>(6);
+            if (ov.roadRail && MatchesRoadRail(f))
             {
                 list.Add("Road|Rail");
             }
 
-            if (MatchesUnmarked(f))
+            if (ov.unmarked && MatchesUnmarked(f))
             {
                 list.Add("Unmarked");
             }
 
-            if (MatchesCrosswalk(f))
+            if (ov.crosswalk && MatchesCrosswalk(f))
             {
                 list.Add("Crosswalk");
             }
 
-            if (MatchesGatePassage(f))
+            if (ov.gatePassage && MatchesGatePassage(f))
             {
                 list.Add("Gate|Passage");
             }
 
-            if (MatchesBridge(f))
+            if (ov.tram && MatchesTram(f))
+            {
+                list.Add("Tram");
+            }
+
+            if (ov.bridge && MatchesBridge(f))
             {
                 list.Add("Bridge");
             }
@@ -672,6 +707,8 @@ namespace ZombieCity.City.EditorTools
             (f & (ushort)(CellFlags.Gate | CellFlags.BuildingPassage)) != 0;
 
         static bool MatchesBridge(ushort f) => (f & (ushort)CellFlags.Bridge) != 0;
+
+        static bool MatchesTram(ushort f) => (f & (ushort)CellFlags.Tram) != 0;
 
         static Color32 Blend(Color32 a, Color32 b, float t)
         {
@@ -938,6 +975,10 @@ namespace ZombieCity.City.EditorTools
             {
                 baseCol = ColCrosswalk;
             }
+            else if ((f & (ushort)CellFlags.Tram) != 0)
+            {
+                baseCol = ColRail;
+            }
             else if ((f & (ushort)(CellFlags.Sidewalk | CellFlags.Cycleway | CellFlags.Steps | CellFlags.SidewalkGenerated)) != 0)
             {
                 baseCol = ColSidewalk;
@@ -1125,6 +1166,7 @@ namespace ZombieCity.City.EditorTools
             window._ovRoadRail = false;
             window._ovBridge = false;
             window._ovGatePassage = false;
+            window._ovTram = true;
             window._cropSizeM = 50f;
             window._cropPxPerCell = 4;
             window.ReloadCrossings();

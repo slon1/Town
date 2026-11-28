@@ -22,6 +22,7 @@ namespace ZombieCity.City.UI
         [SerializeField] OverlayToggle overlayCrosswalk;
         [SerializeField] OverlayToggle overlayGate;
         [SerializeField] OverlayToggle overlayBridge;
+        [SerializeField] OverlayToggle overlayTram;
         [SerializeField] Button resetCameraButton;
         [SerializeField] Button collapseButton;
         [SerializeField] Button expandButton;
@@ -72,6 +73,7 @@ namespace ZombieCity.City.UI
             WireOverlay(overlayCrosswalk);
             WireOverlay(overlayGate);
             WireOverlay(overlayBridge);
+            WireOverlay(overlayTram);
             if (toggleBuildings != null)
             {
                 toggleBuildings.onValueChanged.AddListener(on =>
@@ -130,6 +132,7 @@ namespace ZombieCity.City.UI
             overlayCrosswalk.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Crosswalk));
             overlayGate.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.GatePassage));
             overlayBridge.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Bridge));
+            overlayTram.toggle?.SetIsOnWithoutNotify(_layers.GetOverlay(CityOverlay.Tram));
             _syncing = false;
         }
 
